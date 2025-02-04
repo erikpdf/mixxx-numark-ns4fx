@@ -287,8 +287,8 @@
             <control>
                 <group>[Channel1]</group>
                 <key>NS4FX.decks[1].hotcues[4].input</key>
-                <status>0x94</status>
-                <midino>0x23</midino>
+                <status>0x84</status>
+                <midino>0x1B</midino>
                 <options>
                     <script-binding/>
                 </options>
@@ -296,8 +296,8 @@
             <control>
                 <group>[Channel2]</group>
                 <key>NS4FX.decks[2].hotcues[4].input</key>
-                <status>0x95</status>
-                <midino>0x23</midino>
+                <status>0x85</status>
+                <midino>0x1B</midino>
                 <options>
                     <script-binding/>
                 </options>
@@ -305,8 +305,8 @@
             <control>
                 <group>[Channel1]</group>
                 <key>NS4FX.decks[1].hotcues[3].input</key>
-                <status>0x94</status>
-                <midino>0x22</midino>
+                <status>0x84</status>
+                <midino>0x1A</midino>
                 <options>
                     <script-binding/>
                 </options>
@@ -314,8 +314,8 @@
             <control>
                 <group>[Channel3]</group>
                 <key>NS4FX.decks[3].hotcues[4].input</key>
-                <status>0x96</status>
-                <midino>0x23</midino>
+                <status>0x86</status>
+                <midino>0x1B</midino>
                 <options>
                     <script-binding/>
                 </options>
@@ -323,8 +323,8 @@
             <control>
                 <group>[Channel2]</group>
                 <key>NS4FX.decks[2].hotcues[3].input</key>
-                <status>0x95</status>
-                <midino>0x22</midino>
+                <status>0x85</status>
+                <midino>0x1A</midino>
                 <options>
                     <script-binding/>
                 </options>
@@ -332,8 +332,8 @@
             <control>
                 <group>[Channel1]</group>
                 <key>NS4FX.decks[1].hotcues[2].input</key>
-                <status>0x94</status>
-                <midino>0x21</midino>
+                <status>0x84</status>
+                <midino>0x19</midino>
                 <options>
                     <script-binding/>
                 </options>
@@ -350,8 +350,8 @@
             <control>
                 <group>[Channel4]</group>
                 <key>NS4FX.decks[4].hotcues[4].input</key>
-                <status>0x97</status>
-                <midino>0x23</midino>
+                <status>0x87</status>
+                <midino>0x1B</midino>
                 <options>
                     <script-binding/>
                 </options>
@@ -359,8 +359,8 @@
             <control>
                 <group>[Channel3]</group>
                 <key>NS4FX.decks[3].hotcues[3].input</key>
-                <status>0x96</status>
-                <midino>0x22</midino>
+                <status>0x86</status>
+                <midino>0x1A</midino>
                 <options>
                     <script-binding/>
                 </options>
@@ -368,8 +368,8 @@
             <control>
                 <group>[Channel2]</group>
                 <key>NS4FX.decks[2].hotcues[2].input</key>
-                <status>0x95</status>
-                <midino>0x21</midino>
+                <status>0x85</status>
+                <midino>0x19</midino>
                 <options>
                     <script-binding/>
                 </options>
@@ -377,8 +377,8 @@
             <control>
                 <group>[Channel1]</group>
                 <key>NS4FX.decks[1].hotcues[1].input</key>
-                <status>0x94</status>
-                <midino>0x20</midino>
+                <status>0x84</status>
+                <midino>0x18</midino>
                 <options>
                     <script-binding/>
                 </options>
@@ -395,8 +395,8 @@
             <control>
                 <group>[Channel4]</group>
                 <key>NS4FX.decks[4].hotcues[3].input</key>
-                <status>0x97</status>
-                <midino>0x22</midino>
+                <status>0x87</status>
+                <midino>0x1A</midino>
                 <options>
                     <script-binding/>
                 </options>
@@ -404,8 +404,8 @@
             <control>
                 <group>[Channel3]</group>
                 <key>NS4FX.decks[3].hotcues[2].input</key>
-                <status>0x96</status>
-                <midino>0x21</midino>
+                <status>0x86</status>
+                <midino>0x19</midino>
                 <options>
                     <script-binding/>
                 </options>
@@ -413,8 +413,8 @@
             <control>
                 <group>[Channel2]</group>
                 <key>NS4FX.decks[2].hotcues[1].input</key>
-                <status>0x95</status>
-                <midino>0x20</midino>
+                <status>0x85</status>
+                <midino>0x18</midino>
                 <options>
                     <script-binding/>
                 </options>
@@ -449,8 +449,8 @@
             <control>
                 <group>[Channel4]</group>
                 <key>NS4FX.decks[4].hotcues[2].input</key>
-                <status>0x97</status>
-                <midino>0x21</midino>
+                <status>0x87</status>
+                <midino>0x19</midino>
                 <options>
                     <script-binding/>
                 </options>
@@ -458,8 +458,8 @@
             <control>
                 <group>[Channel3]</group>
                 <key>NS4FX.decks[3].hotcues[1].input</key>
-                <status>0x96</status>
-                <midino>0x20</midino>
+                <status>0x86</status>
+                <midino>0x18</midino>
                 <options>
                     <script-binding/>
                 </options>
@@ -503,8 +503,8 @@
             <control>
                 <group>[Channel4]</group>
                 <key>NS4FX.decks[4].hotcues[1].input</key>
-                <status>0x97</status>
-                <midino>0x20</midino>
+                <status>0x87</status>
+                <midino>0x18</midino>
                 <options>
                     <script-binding/>
                 </options>

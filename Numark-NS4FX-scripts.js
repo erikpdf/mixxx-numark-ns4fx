@@ -455,6 +455,9 @@ NS4FX.Deck = function(number, midi_chan, effects_unit) {
     var eu = effects_unit;
     this.active = (number == 1 || number == 2);
 
+    hotcuePressed = false;
+    playPressedDuringHotcue = false;
+    
     components.Deck.call(this, number);
 
     this.bpm = new components.Component({
@@ -526,8 +529,32 @@ NS4FX.Deck = function(number, midi_chan, effects_unit) {
             this.inKey = 'play_stutter';
             this.type = components.Button.prototype.types.push;
         },
+        input: function(channel, control, value, status, group) {
+            if (this.isShifted) {
+                // Shift-Modus Logik
+                if (value === 0x7F) {
+                    engine.setValue(group, "play_stutter", 1);
+                } else {
+                    engine.setValue(group, "play_stutter", 0);
+                }
+            } else {
+                // Normaler Modus Logik
+                if (value === 0x7F) {
+                    print(hotcuePressed)
+                    if (hotcuePressed) {
+                        print("pressed during hotcue")
+                        playPressedDuringHotcue = true;
+                    } else {
+                        print("normal")
+                        var currentPlayState = engine.getValue(group, "play");
+                        engine.setValue(group, "play", !currentPlayState);
+                    }
+                }
+            }
+        }
     });
 
+    
     this.load = new components.Button({
         inKey: 'LoadSelectedTrack',
         shift: function() {
@@ -580,16 +607,26 @@ NS4FX.Deck = function(number, midi_chan, effects_unit) {
             shiftControl: true,
             shiftOffset: 8,
             input: function(channel, control, value, status, group) {
-                if (value === 0x7F) { // Taste gedrückt
-                    var isPlaying = engine.getValue(group, "play"); // Prüfe, ob Track läuft
-                    engine.setValue(group, "hotcue_" + this.number + "_activate", 1);
-                    if (isPlaying) {
-                        engine.setValue(group, "play", 1); // Spielt nur weiter, wenn Track läuft
+                if (value === 0x7F) { // Hotcue gedrückt
+                    this.oldPosition = engine.getValue(group, "playposition");
+                    this.wasPlaying = engine.getValue(group, "play");
+                    hotcuePressed = true;
+                    playPressedDuringHotcue = false;
+                    
+                    engine.setValue(group, "hotcue_" + this.number + "_goto", 1);
+                    
+                    if (!this.wasPlaying) {
+                        engine.setValue(group, "play", 1);
                     }
+                } else { // Hotcue losgelassen
+                    if (!this.wasPlaying && !playPressedDuringHotcue) {
+                        engine.setValue(group, "play", 0);
+                        engine.setValue(group, "hotcue_" + this.number + "_goto", 1);
+                    }
+                    hotcuePressed = false;
                 }
             }
         });
-        
 
         // sampler buttons 5-8
         this.sampler_buttons[i] = new components.SamplerButton({
@@ -749,24 +786,24 @@ NS4FX.Deck = function(number, midi_chan, effects_unit) {
         }, obj);
     };
 
-    //this.alternate_autoloop = new components.ComponentContainer({
-    //    auto1: new components.HotcueButton(auto_loop_hotcue(0x40, {
-    //        number: 5,
-    //    })),
-    //    auto2: new components.HotcueButton(auto_loop_hotcue(0x15, {
-    //        number: 6,
-    //    })),
-    //    auto3: new components.HotcueButton(auto_loop_hotcue(0x16, {
-    //        number: 7,
-    //    })),
-    //    auto4: new components.HotcueButton(auto_loop_hotcue(0x17, {
-    //        number: 8,
-    //    })),
-    //});
-    //this.alternate_autoloop.roll1 = this.alternate_autoloop.auto1;
-    //this.alternate_autoloop.roll2 = this.alternate_autoloop.auto2;
-    //this.alternate_autoloop.roll3 = this.alternate_autoloop.auto3;
-    //this.alternate_autoloop.roll4 = this.alternate_autoloop.auto4;
+    this.alternate_autoloop = new components.ComponentContainer({
+        auto1: new components.HotcueButton(auto_loop_hotcue(0x40, {
+            number: 5,
+        })),
+        auto2: new components.HotcueButton(auto_loop_hotcue(0x15, {
+            number: 6,
+        })),
+        auto3: new components.HotcueButton(auto_loop_hotcue(0x16, {
+            number: 7,
+        })),
+        auto4: new components.HotcueButton(auto_loop_hotcue(0x17, {
+            number: 8,
+        })),
+    });
+    this.alternate_autoloop.roll1 = this.alternate_autoloop.auto1;
+    this.alternate_autoloop.roll2 = this.alternate_autoloop.auto2;
+    this.alternate_autoloop.roll3 = this.alternate_autoloop.auto3;
+    this.alternate_autoloop.roll4 = this.alternate_autoloop.auto4;
 
     this.normal_autoloop = new components.ComponentContainer({
         auto1: new components.Button(auto_loop_base(0x40, {
