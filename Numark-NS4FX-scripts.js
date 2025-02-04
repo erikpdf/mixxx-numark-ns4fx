@@ -217,35 +217,6 @@ NS4FX.shutdown = function() {
     midi.sendSysexMsg(byteArray, byteArray.length);
 };
 
-// track the state of the shift key
-NS4FX.shift = false;
-NS4FX.shiftToggle = function (channel, control, value, status, group) {
-    if (control === 0x20) {
-        NS4FX.shift = value == 0x7F;
-    }
-    
-    if (NS4FX.shift) {
-        NS4FX.decks.shift();
-        NS4FX.sampler_all.shift();
-        NS4FX.effects.shift();
-        NS4FX.browse.shift();
-        NS4FX.head_gain.shift();
-
-        // reset the beat jump scratch accumulators
-        NS4FX.scratch_accumulator[1] = 0;
-        NS4FX.scratch_accumulator[2] = 0;
-        NS4FX.scratch_accumulator[3] = 0;
-        NS4FX.scratch_accumulator[4] = 0;
-    }
-    else {
-        NS4FX.decks.unshift();
-        NS4FX.sampler_all.unshift();
-        NS4FX.effects.unshift();
-        NS4FX.browse.unshift();
-        NS4FX.head_gain.unshift();
-    }
-};
-
 
 NS4FX.EffectUnit = function (unitNumbers) {
     var eu = this;
@@ -484,11 +455,13 @@ NS4FX.Deck = function(number, midi_chan, effects_unit) {
     var deck = this;
     var eu = effects_unit;
     this.active = (number == 1 || number == 2);
+    
 
     hotcuePressed = false;
     playPressedDuringHotcue = false;
     
     components.Deck.call(this, number);
+
 
     this.bpm = new components.Component({
         outKey: "bpm",
@@ -755,37 +728,12 @@ NS4FX.Deck = function(number, midi_chan, effects_unit) {
 
     //LOOP
     this.loopControls = new components.ComponentContainer({
-        loop_toggle: new components.Button({
-            midi: [0x94 + midi_chan, 0x40],
-            input: function(channel, control, value, status) {
-                if (value === 0x7F) { // Button pressed
-                    var currentState = engine.getValue(this.group, "beatloop_activate");
-                    print("Current state: " + currentState);
-                    
-                    // Immer auf 1 setzen, unabhängig vom aktuellen Zustand
-                    engine.setValue(this.group, "beatloop_activate", 1);
-                    
-                    // Wenn der Loop bereits aktiv war, deaktivieren wir ihn sofort wieder
-                    if (currentState === 1) {
-                        engine.setValue(this.group, "beatloop_activate", 0);
-                    }
-                    
-                    // LED-Zustand aktualisieren
-                    this.output();
-                }
-            },
-            output: function() {
-                var ledState = engine.getValue(this.group, "beatloop_activate");
-                print("LED state: " + ledState);
-                this.send(ledState ? 0x7F : 0x00);
-            }
-        })
-        ,
         loop_halve: new components.Button({
             midi: [0x94 + midi_chan, 0x34],
             input: function(channel, control, value, status) {
                 if (value === 0x7F) { // Button pressed
                     engine.setValue(this.group, "loop_halve", 1);
+                    print("Loop halved");
                     this.output(1);
                 } else if (value === 0x00) { // Button released
                     this.output(0);
@@ -801,6 +749,7 @@ NS4FX.Deck = function(number, midi_chan, effects_unit) {
             input: function(channel, control, value, status) {
                 if (value === 0x7F) { // Button pressed
                     engine.setValue(this.group, "loop_double", 1);
+                    print("Loop doubled");
                     this.output(1);
                 } else if (value === 0x00) { // Button released
                     this.output(0);
@@ -809,11 +758,103 @@ NS4FX.Deck = function(number, midi_chan, effects_unit) {
             output: function(value) {
                 this.send(value ? 0x7F : 0x00);
             }
+        }),
+        
+        loop_in: new components.Button({
+            midi: [0x94 + midi_chan, 0x36],
+            input: function(channel, control, value, status) {
+                if (value === 0x7F) { // Button pressed
+                    engine.setValue(this.group, "loop_in", 1);
+                    print("Loop in point set");
+                    this.output(1);
+                } else if (value === 0x00) { // Button released
+                    engine.setValue(this.group, "loop_in", 0);
+                    this.output(0);
+                }
+            },
+            output: function(value) {
+                this.send(value ? 0x7F : 0x00);
+            }
+        }),
+        
+        loop_out: new components.Button({
+            midi: [0x94 + midi_chan, 0x37],
+            input: function(channel, control, value, status) {
+                if (value === 0x7F) { // Button pressed
+                    engine.setValue(this.group, "loop_out", 1);
+                    print("Loop out point set");
+                    this.output(1);
+                } else if (value === 0x00) { // Button released
+                    engine.setValue(this.group, "loop_out", 0);
+                    this.output(0);
+                }
+            },
+            output: function(value) {
+                this.send(value ? 0x7F : 0x00);
+            }
+        }),
+        reloop: new components.Button({
+            midi: [0x94 + midi_chan, 0x41],
+            input: function(channel, control, value, status) {
+                if (value === 0x7F) { // Button pressed
+                    var loopEnabled = engine.getValue(this.group, "loop_enabled");
+                    if (loopEnabled) {
+                        // Wenn der Loop aktiv ist, deaktivieren wir ihn
+                        engine.setValue(this.group, "loop_enabled", 0);
+                        print("Loop deactivated");
+                    } else {
+                        // Wenn kein Loop aktiv ist, aktivieren wir den letzten Loop
+                        engine.setValue(this.group, "reloop_toggle", 1);
+                        print("Reloop activated");
+                    }
+                    this.output(1);
+                } else if (value === 0x00) { // Button released
+                    this.output(0);
+                }
+            },
+            output: function(value) {
+                this.send(value ? 0x7F : 0x00);
+            },
+            connect: function() {
+                this.connections.push(
+                    engine.connectControl(this.group, "loop_enabled", function(value) {
+                        this.output(value);
+                    }.bind(this))
+                );
+            }
+        }),
+        
+        loop_toggle: new components.Button({
+            midi: [0x94 + midi_chan, 0x40],
+            input: function(channel, control, value, status) {
+                if (value === 0x7F) { // Button pressed
+                    var loopEnabled = engine.getValue(this.group, "loop_enabled");
+                    if (loopEnabled) {
+                        // Wenn ein Loop aktiv ist, deaktivieren wir ihn
+                        engine.setValue(this.group, "loop_enabled", 0);
+                    } else {
+                        // Wenn kein Loop aktiv ist, setzen wir einen neuen Loop an der aktuellen Position
+                        engine.setValue(this.group, "beatloop_activate", 1);
+                    }
+                }
+            },
+            output: function(value) {
+                this.send(value ? 0x7F : 0x00);
+            },
+            connect: function() {
+                this.connections.push(
+                    engine.connectControl(this.group, "loop_enabled", function(value) {
+                        this.output(value);
+                    }.bind(this)),
+                    engine.connectControl(this.group, "track_loaded", function() {
+                        var loopEnabled = engine.getValue(this.group, "loop_enabled");
+                        this.output(loopEnabled);
+                    }.bind(this))
+                );
+            }
         })
         
     });
-
-    
 
     this.pad_mode = new components.Component({
         input: function (channel, control, value, status, group) {
@@ -1437,5 +1478,34 @@ NS4FX.vuCallback = function(value, group, control) {
             level = 81;
         }
         midi.sendShortMsg(0xBF, 0x45, level);
+    }
+};
+
+// track the state of the shift key
+NS4FX.shift = false;
+NS4FX.shiftToggle = function (channel, control, value, status, group) {
+    if (control === 0x20) {
+        NS4FX.shift = value == 0x7F;
+    }
+    
+    if (NS4FX.shift) {
+        NS4FX.decks.shift();
+        NS4FX.sampler_all.shift();
+        NS4FX.effects.shift();
+        NS4FX.browse.shift();
+        NS4FX.head_gain.shift();
+
+        // reset the beat jump scratch accumulators
+        NS4FX.scratch_accumulator[1] = 0;
+        NS4FX.scratch_accumulator[2] = 0;
+        NS4FX.scratch_accumulator[3] = 0;
+        NS4FX.scratch_accumulator[4] = 0;
+    }
+    else {
+        NS4FX.decks.unshift();
+        NS4FX.sampler_all.unshift();
+        NS4FX.effects.unshift();
+        NS4FX.browse.unshift();
+        NS4FX.head_gain.unshift();
     }
 };
