@@ -25,7 +25,7 @@ var UseAutoLoopAsCue = false;
 var UseCueAsSampler = false;
 
 // should shift+load eject or load and play?
-var ShiftLoadEjects = false;
+var ShiftLoadEjects = true;
 
 // should we show effect parameters when an effect is focused?
 var ShowFocusedEffectParameters = false;
@@ -579,7 +579,17 @@ NS4FX.Deck = function(number, midi_chan, effects_unit) {
             sendShifted: true,
             shiftControl: true,
             shiftOffset: 8,
+            input: function(channel, control, value, status, group) {
+                if (value === 0x7F) { // Taste gedrückt
+                    var isPlaying = engine.getValue(group, "play"); // Prüfe, ob Track läuft
+                    engine.setValue(group, "hotcue_" + this.number + "_activate", 1);
+                    if (isPlaying) {
+                        engine.setValue(group, "play", 1); // Spielt nur weiter, wenn Track läuft
+                    }
+                }
+            }
         });
+        
 
         // sampler buttons 5-8
         this.sampler_buttons[i] = new components.SamplerButton({
@@ -739,27 +749,27 @@ NS4FX.Deck = function(number, midi_chan, effects_unit) {
         }, obj);
     };
 
-    this.alternate_autoloop = new components.ComponentContainer({
-        auto1: new components.HotcueButton(auto_loop_hotcue(0x14, {
-            number: 5,
-        })),
-        auto2: new components.HotcueButton(auto_loop_hotcue(0x15, {
-            number: 6,
-        })),
-        auto3: new components.HotcueButton(auto_loop_hotcue(0x16, {
-            number: 7,
-        })),
-        auto4: new components.HotcueButton(auto_loop_hotcue(0x17, {
-            number: 8,
-        })),
-    });
-    this.alternate_autoloop.roll1 = this.alternate_autoloop.auto1;
-    this.alternate_autoloop.roll2 = this.alternate_autoloop.auto2;
-    this.alternate_autoloop.roll3 = this.alternate_autoloop.auto3;
-    this.alternate_autoloop.roll4 = this.alternate_autoloop.auto4;
+    //this.alternate_autoloop = new components.ComponentContainer({
+    //    auto1: new components.HotcueButton(auto_loop_hotcue(0x40, {
+    //        number: 5,
+    //    })),
+    //    auto2: new components.HotcueButton(auto_loop_hotcue(0x15, {
+    //        number: 6,
+    //    })),
+    //    auto3: new components.HotcueButton(auto_loop_hotcue(0x16, {
+    //        number: 7,
+    //    })),
+    //    auto4: new components.HotcueButton(auto_loop_hotcue(0x17, {
+    //        number: 8,
+    //    })),
+    //});
+    //this.alternate_autoloop.roll1 = this.alternate_autoloop.auto1;
+    //this.alternate_autoloop.roll2 = this.alternate_autoloop.auto2;
+    //this.alternate_autoloop.roll3 = this.alternate_autoloop.auto3;
+    //this.alternate_autoloop.roll4 = this.alternate_autoloop.auto4;
 
     this.normal_autoloop = new components.ComponentContainer({
-        auto1: new components.Button(auto_loop_base(0x14, {
+        auto1: new components.Button(auto_loop_base(0x40, {
             inKey: 'beatloop_1_toggle',
             outKey: 'beatloop_1_enabled',
         })),
@@ -1431,8 +1441,10 @@ NS4FX.vuCallback = function(value, group, control) {
 // track the state of the shift key
 NS4FX.shift = false;
 NS4FX.shiftToggle = function (channel, control, value, status, group) {
-    NS4FX.shift = value == 0x7F;
-
+    if (control === 0x20) {
+        NS4FX.shift = value == 0x7F;
+    }
+    
     if (NS4FX.shift) {
         NS4FX.decks.shift();
         NS4FX.sampler_all.shift();

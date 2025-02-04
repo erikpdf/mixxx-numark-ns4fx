@@ -1,13 +1,13 @@
 <?xml version='1.0' encoding='utf-8'?>
 <MixxxControllerPreset mixxxVersion="2.1.0+" schemaVersion="1">
     <info>
-        <name>Numark Mixtrack Platinum</name>
+        <name>Numark NS4FX</name>
         <author>Erik Puschendorf, Matthew Nicholson</author>
-        <description>Numark Mixtrack Platinum mapping with support for LCD screens and 4 deck playback.</description>
+        <description>Numark NS4FX mapping with support for LCD screens and 4 deck playback.</description>
         <forums>https://www.mixxx.org/forums/viewtopic.php?f=7&amp;t=8863</forums>
-        <manual>numark_ns4fx</manual>
+        <!--<manual>numark_ns4fx</manual>!-->
     </info>
-    <controller id="MixTrack">
+    <controller id="NS4FX">
         <scriptfiles>
             <file filename="lodash.mixxx.js"/>
             <file filename="midi-components-0.0.js"/>
@@ -19,7 +19,7 @@
                 <key>NS4FX.decks[1].pitch.inputLSB</key>
                 <description>pitch fader lsb</description>
                 <status>0xB0</status>
-                <midino>0x77</midino>
+                <midino>0x29</midino>
                 <options>
                     <script-binding/>
                 </options>
@@ -29,7 +29,7 @@
                 <key>NS4FX.decks[2].pitch.inputLSB</key>
                 <description>pitch fader lsb</description>
                 <status>0xB1</status>
-                <midino>0x77</midino>
+                <midino>0x29</midino>
                 <options>
                     <script-binding/>
                 </options>
@@ -39,7 +39,7 @@
                 <key>NS4FX.decks[3].pitch.inputLSB</key>
                 <description>pitch fader lsb</description>
                 <status>0xB2</status>
-                <midino>0x77</midino>
+                <midino>0x29</midino>
                 <options>
                     <script-binding/>
                 </options>
@@ -49,7 +49,7 @@
                 <key>NS4FX.decks[4].pitch.inputLSB</key>
                 <description>pitch fader lsb</description>
                 <status>0xB3</status>
-                <midino>0x77</midino>
+                <midino>0x29</midino>
                 <options>
                     <script-binding/>
                 </options>
@@ -279,7 +279,7 @@
                 <key>NS4FX.shiftToggle</key>
                 <description>The shift key.</description>
                 <status>0x9F</status>
-                <midino>0x32</midino>
+                <midino>0x20</midino>
                 <options>
                     <script-binding/>
                 </options>
@@ -949,7 +949,7 @@
                 <group>[Channel1]</group>
                 <key>NS4FX.decks[1].autoloop.auto1.input</key>
                 <status>0x94</status>
-                <midino>0x14</midino>
+                <midino>0x40</midino>
                 <options>
                     <script-binding/>
                 </options>
@@ -957,8 +957,8 @@
             <control>
                 <group>[Channel1]</group>
                 <key>NS4FX.decks[1].load.input</key>
-                <status>0x90</status>
-                <midino>0x10</midino>
+                <status>0x9F</status>
+                <midino>0x02</midino>
                 <options>
                     <script-binding/>
                 </options>
@@ -985,7 +985,7 @@
                 <group>[Channel2]</group>
                 <key>NS4FX.decks[2].autoloop.auto1.input</key>
                 <status>0x95</status>
-                <midino>0x14</midino>
+                <midino>0x40</midino>
                 <options>
                     <script-binding/>
                 </options>
@@ -993,8 +993,8 @@
             <control>
                 <group>[Channel2]</group>
                 <key>NS4FX.decks[2].load.input</key>
-                <status>0x91</status>
-                <midino>0x10</midino>
+                <status>0x9F</status>
+                <midino>0x03</midino>
                 <options>
                     <script-binding/>
                 </options>
@@ -1012,7 +1012,7 @@
                 <group>[Channel3]</group>
                 <key>NS4FX.decks[3].autoloop.auto1.input</key>
                 <status>0x96</status>
-                <midino>0x14</midino>
+                <midino>0x40</midino>
                 <options>
                     <script-binding/>
                 </options>
@@ -1020,8 +1020,8 @@
             <control>
                 <group>[Channel3]</group>
                 <key>NS4FX.decks[3].load.input</key>
-                <status>0x92</status>
-                <midino>0x10</midino>
+                <status>0x9F</status>
+                <midino>0x04</midino>
                 <options>
                     <script-binding/>
                 </options>
@@ -1030,7 +1030,7 @@
                 <group>[Channel4]</group>
                 <key>NS4FX.decks[4].autoloop.auto1.input</key>
                 <status>0x97</status>
-                <midino>0x14</midino>
+                <midino>0x40</midino>
                 <options>
                     <script-binding/>
                 </options>
@@ -1047,8 +1047,8 @@
             <control>
                 <group>[Channel4]</group>
                 <key>NS4FX.decks[4].load.input</key>
-                <status>0x93</status>
-                <midino>0x10</midino>
+                <status>0x9F</status>
+                <midino>0x05</midino>
                 <options>
                     <script-binding/>
                 </options>
@@ -1315,8 +1315,8 @@
             <control>
                 <group>[Channel1]</group>
                 <key>NS4FX.decks[1].cue_button.input</key>
-                <status>0x90</status>
-                <midino>0x05</midino>
+                <status>0x80</status>
+                <midino>0x01</midino>
                 <options>
                     <script-binding/>
                 </options>
@@ -1353,8 +1353,8 @@
             <control>
                 <group>[Channel2]</group>
                 <key>NS4FX.decks[2].cue_button.input</key>
-                <status>0x91</status>
-                <midino>0x05</midino>
+                <status>0x81</status>
+                <midino>0x01</midino>
                 <options>
                     <script-binding/>
                 </options>
@@ -1362,8 +1362,8 @@
             <control>
                 <group>[Channel1]</group>
                 <key>NS4FX.decks[1].play_button.input</key>
-                <status>0x90</status>
-                <midino>0x04</midino>
+                <status>0x80</status>
+                <midino>0x00</midino>
                 <options>
                     <script-binding/>
                 </options>
@@ -1400,8 +1400,8 @@
             <control>
                 <group>[Channel3]</group>
                 <key>NS4FX.decks[3].cue_button.input</key>
-                <status>0x92</status>
-                <midino>0x05</midino>
+                <status>0x82</status>
+                <midino>0x01</midino>
                 <options>
                     <script-binding/>
                 </options>
@@ -1409,8 +1409,8 @@
             <control>
                 <group>[Channel2]</group>
                 <key>NS4FX.decks[2].play_button.input</key>
-                <status>0x91</status>
-                <midino>0x04</midino>
+                <status>0x81</status>
+                <midino>0x00</midino>
                 <options>
                     <script-binding/>
                 </options>
@@ -1456,8 +1456,8 @@
             <control>
                 <group>[Channel4]</group>
                 <key>NS4FX.decks[4].cue_button.input</key>
-                <status>0x93</status>
-                <midino>0x05</midino>
+                <status>0x83</status>
+                <midino>0x01</midino>
                 <options>
                     <script-binding/>
                 </options>
@@ -1465,8 +1465,8 @@
             <control>
                 <group>[Channel3]</group>
                 <key>NS4FX.decks[3].play_button.input</key>
-                <status>0x92</status>
-                <midino>0x04</midino>
+                <status>0x82</status>
+                <midino>0x00</midino>
                 <options>
                     <script-binding/>
                 </options>
@@ -1511,8 +1511,8 @@
             <control>
                 <group>[Channel4]</group>
                 <key>NS4FX.decks[4].play_button.input</key>
-                <status>0x93</status>
-                <midino>0x04</midino>
+                <status>0x83</status>
+                <midino>0x00</midino>
                 <options>
                     <script-binding/>
                 </options>
@@ -2074,7 +2074,7 @@
                 <group>[Channel1]</group>
                 <key>NS4FX.decks[1].pad_mode.input</key>
                 <status>0x94</status>
-                <midino>0x0E</midino>
+                <midino>0x00</midino>
                 <options>
                     <script-binding/>
                 </options>
@@ -2083,7 +2083,7 @@
                 <group>[Channel1]</group>
                 <key>NS4FX.decks[1].pad_mode.input</key>
                 <status>0x94</status>
-                <midino>0x06</midino>
+                <midino>0x0D</midino>
                 <options>
                     <script-binding/>
                 </options>
@@ -2092,7 +2092,7 @@
                 <group>[Channel1]</group>
                 <key>NS4FX.decks[1].pad_mode.input</key>
                 <status>0x94</status>
-                <midino>0x0B</midino>
+                <midino>0x07</midino>
                 <options>
                     <script-binding/>
                 </options>
@@ -2101,7 +2101,7 @@
                 <group>[Channel2]</group>
                 <key>NS4FX.decks[2].pad_mode.input</key>
                 <status>0x95</status>
-                <midino>0x0E</midino>
+                <midino>0x00</midino>
                 <options>
                     <script-binding/>
                 </options>
@@ -2110,7 +2110,7 @@
                 <group>[Channel2]</group>
                 <key>NS4FX.decks[2].pad_mode.input</key>
                 <status>0x95</status>
-                <midino>0x06</midino>
+                <midino>0x0D</midino>
                 <options>
                     <script-binding/>
                 </options>
@@ -2119,7 +2119,7 @@
                 <group>[Channel2]</group>
                 <key>NS4FX.decks[2].pad_mode.input</key>
                 <status>0x95</status>
-                <midino>0x0B</midino>
+                <midino>0x07</midino>
                 <options>
                     <script-binding/>
                 </options>
@@ -2128,7 +2128,7 @@
                 <group>[Channel3]</group>
                 <key>NS4FX.decks[3].pad_mode.input</key>
                 <status>0x96</status>
-                <midino>0x0E</midino>
+                <midino>0x00</midino>
                 <options>
                     <script-binding/>
                 </options>
@@ -2137,7 +2137,7 @@
                 <group>[Channel3]</group>
                 <key>NS4FX.decks[3].pad_mode.input</key>
                 <status>0x96</status>
-                <midino>0x06</midino>
+                <midino>0x0D</midino>
                 <options>
                     <script-binding/>
                 </options>
@@ -2146,7 +2146,7 @@
                 <group>[Channel3]</group>
                 <key>NS4FX.decks[3].pad_mode.input</key>
                 <status>0x96</status>
-                <midino>0x0B</midino>
+                <midino>0x07</midino>
                 <options>
                     <script-binding/>
                 </options>
@@ -2155,7 +2155,7 @@
                 <group>[Channel4]</group>
                 <key>NS4FX.decks[4].pad_mode.input</key>
                 <status>0x97</status>
-                <midino>0x0E</midino>
+                <midino>0x00</midino>
                 <options>
                     <script-binding/>
                 </options>
@@ -2164,7 +2164,7 @@
                 <group>[Channel4]</group>
                 <key>NS4FX.decks[4].pad_mode.input</key>
                 <status>0x97</status>
-                <midino>0x06</midino>
+                <midino>0x0D</midino>
                 <options>
                     <script-binding/>
                 </options>
@@ -2173,7 +2173,7 @@
                 <group>[Channel4]</group>
                 <key>NS4FX.decks[4].pad_mode.input</key>
                 <status>0x97</status>
-                <midino>0x0B</midino>
+                <midino>0x07</midino>
                 <options>
                     <script-binding/>
                 </options>
