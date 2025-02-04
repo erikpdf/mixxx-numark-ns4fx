@@ -217,6 +217,36 @@ NS4FX.shutdown = function() {
     midi.sendSysexMsg(byteArray, byteArray.length);
 };
 
+// track the state of the shift key
+NS4FX.shift = false;
+NS4FX.shiftToggle = function (channel, control, value, status, group) {
+    if (control === 0x20) {
+        NS4FX.shift = value == 0x7F;
+    }
+    
+    if (NS4FX.shift) {
+        NS4FX.decks.shift();
+        NS4FX.sampler_all.shift();
+        NS4FX.effects.shift();
+        NS4FX.browse.shift();
+        NS4FX.head_gain.shift();
+
+        // reset the beat jump scratch accumulators
+        NS4FX.scratch_accumulator[1] = 0;
+        NS4FX.scratch_accumulator[2] = 0;
+        NS4FX.scratch_accumulator[3] = 0;
+        NS4FX.scratch_accumulator[4] = 0;
+    }
+    else {
+        NS4FX.decks.unshift();
+        NS4FX.sampler_all.unshift();
+        NS4FX.effects.unshift();
+        NS4FX.browse.unshift();
+        NS4FX.head_gain.unshift();
+    }
+};
+
+
 NS4FX.EffectUnit = function (unitNumbers) {
     var eu = this;
     this.unitNumbers = unitNumbers;
@@ -554,7 +584,7 @@ NS4FX.Deck = function(number, midi_chan, effects_unit) {
         }
     });
 
-    
+    //HIER
     this.load = new components.Button({
         inKey: 'LoadSelectedTrack',
         shift: function() {
@@ -603,6 +633,35 @@ NS4FX.Deck = function(number, midi_chan, effects_unit) {
         this.hotcue_buttons[i] = new components.HotcueButton({
             midi: [0x94 + midi_chan, 0x18 + i - 1],
             number: i,
+            sendShifted: true,
+            shiftControl: true,
+            shiftOffset: 8,
+            input: function(channel, control, value, status, group) {
+                if (value === 0x7F) { // Hotcue gedrückt
+                    this.oldPosition = engine.getValue(group, "playposition");
+                    this.wasPlaying = engine.getValue(group, "play");
+                    hotcuePressed = true;
+                    playPressedDuringHotcue = false;
+                    
+                    engine.setValue(group, "hotcue_" + this.number + "_goto", 1);
+                    
+                    if (!this.wasPlaying) {
+                        engine.setValue(group, "play", 1);
+                    }
+                } else { // Hotcue losgelassen
+                    if (!this.wasPlaying && !playPressedDuringHotcue) {
+                        engine.setValue(group, "play", 0);
+                        engine.setValue(group, "hotcue_" + this.number + "_goto", 1);
+                    }
+                    hotcuePressed = false;
+                }
+            }
+        });
+
+        //cue buttons 5 - 8
+        this.hotcue_buttons[9-i] = new components.HotcueButton({
+            midi: [0x94 + midi_chan, 0x18 - i],
+            number:  9 - i,
             sendShifted: true,
             shiftControl: true,
             shiftOffset: 8,
@@ -694,160 +753,67 @@ NS4FX.Deck = function(number, midi_chan, effects_unit) {
     this.key_up.other = this.key_down;
     this.key_down.other = this.key_up;
 
-    loop_base = function(midino, obj) {
-        return _.assign({
-            midi: [0x94 + midi_chan, midino],
-            on: 0x01,
-            sendShifted: true,
-            shiftChannel: true,
-            shiftOffset: -0x10,
-        }, obj);
-    };
-
-    this.alternate_manloop = new components.ComponentContainer({
-        loop_in: new components.HotcueButton(loop_base(0x38, {
-            number: 5,
-        })),
-        loop_out: new components.HotcueButton(loop_base(0x39, {
-            number: 6,
-        })),
-        loop_toggle: new components.HotcueButton(loop_base(0x32, {
-            number: 7,
-        })),
-        // there are two hotcue 8 controls, one for the loop_halve button and
-        // one for the loop_double button. These buttons are two individual
-        // functions when in manual loop mode, but they behave as one button
-        // in hotcue mode.
-        loop_halve: new components.HotcueButton(loop_base(0x34, {
-            number: 8,
-        })),
-        loop_double: new components.HotcueButton(loop_base(0x35, {
-            number: 8,
-        })),
-    });
-    this.normal_manloop = new components.ComponentContainer({
-        loop_in: new components.Button(loop_base(0x38, {
-            inKey: 'loop_in',
-            outKey: 'loop_start_position',
-            outValueScale: function (value) {
-                return (value != -1) ? this.on : this.off;
-            },
-        })),
-        loop_out: new components.Button(loop_base(0x39, {
-            inKey: 'loop_out',
-            outKey: 'loop_end_position',
-            outValueScale: function (value) {
-                return (value != -1) ? this.on : this.off;
-            },
-        })),
-        loop_toggle: new components.LoopToggleButton(loop_base(0x32, {})),
-        loop_halve: new components.Button(loop_base(0x34, {
-            key: 'loop_halve',
+    //LOOP
+    this.loopControls = new components.ComponentContainer({
+        loop_toggle: new components.Button({
+            midi: [0x94 + midi_chan, 0x40],
             input: function(channel, control, value, status) {
-                if (this.isPress(channel, control, value, status)) {
-                    engine.setValue(deck.currentDeck, "loop_scale", 0.5);
+                if (value === 0x7F) { // Button pressed
+                    var currentState = engine.getValue(this.group, "beatloop_activate");
+                    print("Current state: " + currentState);
+                    
+                    // Immer auf 1 setzen, unabhängig vom aktuellen Zustand
+                    engine.setValue(this.group, "beatloop_activate", 1);
+                    
+                    // Wenn der Loop bereits aktiv war, deaktivieren wir ihn sofort wieder
+                    if (currentState === 1) {
+                        engine.setValue(this.group, "beatloop_activate", 0);
+                    }
+                    
+                    // LED-Zustand aktualisieren
+                    this.output();
                 }
             },
-        })),
-        loop_double: new components.Button(loop_base(0x35, {
-            key: 'loop_double',
+            output: function() {
+                var ledState = engine.getValue(this.group, "beatloop_activate");
+                print("LED state: " + ledState);
+                this.send(ledState ? 0x7F : 0x00);
+            }
+        })
+        ,
+        loop_halve: new components.Button({
+            midi: [0x94 + midi_chan, 0x34],
             input: function(channel, control, value, status) {
-                if (this.isPress(channel, control, value, status)) {
-                    engine.setValue(deck.currentDeck, "loop_scale", 2.0);
+                if (value === 0x7F) { // Button pressed
+                    engine.setValue(this.group, "loop_halve", 1);
+                    this.output(1);
+                } else if (value === 0x00) { // Button released
+                    this.output(0);
                 }
             },
-        })),
-    });
-    // swap normal and alternate manual loop controls
-    if (UseManualLoopAsCue) {
-        var manloop = this.normal_manloop;
-        this.normal_manloop = this.alternate_manloop;
-        this.alternate_manloop = manloop;
-    }
-    this.manloop = this.normal_manloop;
-
-    auto_loop_hotcue = function(midino, obj) {
-        return _.assign({
-            midi: [0x94 + midi_chan, midino],
-            on: 0x40,
-            sendShifted: true,
-            shiftControl: true,
-            shiftOffset: 0x08,
-        }, obj);
-    };
-
-    auto_loop_base = function(midino, obj) {
-        return _.assign({
-            midi: [0x94 + midi_chan, midino],
-            on: 0x40,
-            sendShifted: true,
-            shiftChannel: true,
-            shiftOffset: -0x10,
-        }, obj);
-    };
-
-    this.alternate_autoloop = new components.ComponentContainer({
-        auto1: new components.HotcueButton(auto_loop_hotcue(0x40, {
-            number: 5,
-        })),
-        auto2: new components.HotcueButton(auto_loop_hotcue(0x15, {
-            number: 6,
-        })),
-        auto3: new components.HotcueButton(auto_loop_hotcue(0x16, {
-            number: 7,
-        })),
-        auto4: new components.HotcueButton(auto_loop_hotcue(0x17, {
-            number: 8,
-        })),
-    });
-    this.alternate_autoloop.roll1 = this.alternate_autoloop.auto1;
-    this.alternate_autoloop.roll2 = this.alternate_autoloop.auto2;
-    this.alternate_autoloop.roll3 = this.alternate_autoloop.auto3;
-    this.alternate_autoloop.roll4 = this.alternate_autoloop.auto4;
-
-    this.normal_autoloop = new components.ComponentContainer({
-        auto1: new components.Button(auto_loop_base(0x40, {
-            inKey: 'beatloop_1_toggle',
-            outKey: 'beatloop_1_enabled',
-        })),
-        auto2: new components.Button(auto_loop_base(0x15, {
-            inKey: 'beatloop_2_toggle',
-            outKey: 'beatloop_2_enabled',
-        })),
-        auto3: new components.Button(auto_loop_base(0x16, {
-            inKey: 'beatloop_4_toggle',
-            outKey: 'beatloop_4_enabled',
-        })),
-        auto4: new components.Button(auto_loop_base(0x17, {
-            inKey: 'beatloop_8_toggle',
-            outKey: 'beatloop_8_enabled',
-        })),
-
-        roll1: new components.Button(auto_loop_base(0x1C, {
-            inKey: 'beatlooproll_0.0625_activate',
-            outKey: 'beatloop_0.0625_enabled',
-        })),
-        roll2: new components.Button(auto_loop_base(0x1D, {
-            inKey: 'beatlooproll_0.125_activate',
-            outKey: 'beatloop_0.125_enabled',
-        })),
-        roll3: new components.Button(auto_loop_base(0x1E, {
-            inKey: 'beatlooproll_0.25_activate',
-            outKey: 'beatloop_0.25_enabled',
-        })),
-        roll4: new components.Button(auto_loop_base(0x1F, {
-            inKey: 'beatlooproll_0.5_activate',
-            outKey: 'beatloop_0.5_enabled',
-        })),
+            output: function(value) {
+                this.send(value ? 0x7F : 0x00);
+            }
+        }),
+        
+        loop_double: new components.Button({
+            midi: [0x94 + midi_chan, 0x35],
+            input: function(channel, control, value, status) {
+                if (value === 0x7F) { // Button pressed
+                    engine.setValue(this.group, "loop_double", 1);
+                    this.output(1);
+                } else if (value === 0x00) { // Button released
+                    this.output(0);
+                }
+            },
+            output: function(value) {
+                this.send(value ? 0x7F : 0x00);
+            }
+        })
+        
     });
 
-    // swap normal and alternate auto loop controls
-    if (UseAutoLoopAsCue) {
-        var autoloop = this.normal_autoloop;
-        this.normal_autoloop = this.alternate_autoloop;
-        this.alternate_autoloop = autoloop;
-    }
-    this.autoloop = this.normal_autoloop;
+    
 
     this.pad_mode = new components.Component({
         input: function (channel, control, value, status, group) {
@@ -1471,35 +1437,5 @@ NS4FX.vuCallback = function(value, group, control) {
             level = 81;
         }
         midi.sendShortMsg(0xBF, 0x45, level);
-    }
-};
-
-
-// track the state of the shift key
-NS4FX.shift = false;
-NS4FX.shiftToggle = function (channel, control, value, status, group) {
-    if (control === 0x20) {
-        NS4FX.shift = value == 0x7F;
-    }
-    
-    if (NS4FX.shift) {
-        NS4FX.decks.shift();
-        NS4FX.sampler_all.shift();
-        NS4FX.effects.shift();
-        NS4FX.browse.shift();
-        NS4FX.head_gain.shift();
-
-        // reset the beat jump scratch accumulators
-        NS4FX.scratch_accumulator[1] = 0;
-        NS4FX.scratch_accumulator[2] = 0;
-        NS4FX.scratch_accumulator[3] = 0;
-        NS4FX.scratch_accumulator[4] = 0;
-    }
-    else {
-        NS4FX.decks.unshift();
-        NS4FX.sampler_all.unshift();
-        NS4FX.effects.unshift();
-        NS4FX.browse.unshift();
-        NS4FX.head_gain.unshift();
     }
 };

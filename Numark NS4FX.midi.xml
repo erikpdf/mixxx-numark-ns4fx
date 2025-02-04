@@ -168,17 +168,8 @@
             </control>
             <control>
                 <group>[Channel1]</group>
-                <key>NS4FX.decks[1].manloop.loop_double.input</key>
+                <key>NS4FX.decks[1].loopControls.loop_double.input</key>
                 <status>0x94</status>
-                <midino>0x35</midino>
-                <options>
-                    <script-binding/>
-                </options>
-            </control>
-            <control>
-                <group>[Channel2]</group>
-                <key>NS4FX.decks[2].manloop.loop_double.input</key>
-                <status>0x95</status>
                 <midino>0x35</midino>
                 <options>
                     <script-binding/>
@@ -186,17 +177,8 @@
             </control>
             <control>
                 <group>[Channel1]</group>
-                <key>NS4FX.decks[1].manloop.loop_halve.input</key>
-                <status>0x94</status>
-                <midino>0x34</midino>
-                <options>
-                    <script-binding/>
-                </options>
-            </control>
-            <control>
-                <group>[Channel3]</group>
-                <key>NS4FX.decks[3].manloop.loop_double.input</key>
-                <status>0x96</status>
+                <key>NS4FX.decks[1].loopControls.loop_double.input</key>
+                <status>0x84</status>
                 <midino>0x35</midino>
                 <options>
                     <script-binding/>
@@ -204,8 +186,71 @@
             </control>
             <control>
                 <group>[Channel2]</group>
-                <key>NS4FX.decks[2].manloop.loop_halve.input</key>
+                <key>NS4FX.decks[2].loopControls.loop_double.input</key>
                 <status>0x95</status>
+                <midino>0x35</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>NS4FX.decks[2].loopControls.loop_double.input</key>
+                <status>0x85</status>
+                <midino>0x35</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>            
+            <control>
+                <group>[Channel1]</group>
+                <key>NS4FX.decks[1].loopControls.loop_halve.input</key>
+                <status>0x94</status>
+                <midino>0x34</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+              <control>
+                <group>[Channel1]</group>
+                <key>NS4FX.decks[1].loopControls.loop_halve.input</key>
+                <status>0x84</status>
+                <midino>0x34</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel3]</group>
+                <key>NS4FX.decks[3].loopControls.loop_double.input</key>
+                <status>0x96</status>
+                <midino>0x35</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+                        <control>
+                <group>[Channel3]</group>
+                <key>NS4FX.decks[3].loopControls.loop_double.input</key>
+                <status>0x86</status>
+                <midino>0x35</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>NS4FX.decks[2].loopControls.loop_halve.input</key>
+                <status>0x95</status>
+                <midino>0x34</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+                        <control>
+                <group>[Channel2]</group>
+                <key>NS4FX.decks[2].loopControls.loop_halve.input</key>
+                <status>0x85</status>
                 <midino>0x34</midino>
                 <options>
                     <script-binding/>
@@ -213,7 +258,7 @@
             </control>
             <control>
                 <group>[Channel4]</group>
-                <key>NS4FX.decks[4].manloop.loop_double.input</key>
+                <key>NS4FX.decks[4].loopControls.loop_double.input</key>
                 <status>0x97</status>
                 <midino>0x35</midino>
                 <options>
@@ -221,9 +266,27 @@
                 </options>
             </control>
             <control>
+                <group>[Channel4]</group>
+                <key>NS4FX.decks[4].loopControls.loop_double.input</key>
+                <status>0x87</status>
+                <midino>0x35</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
                 <group>[Channel3]</group>
-                <key>NS4FX.decks[3].manloop.loop_halve.input</key>
+                <key>NS4FX.decks[3].loopControls.loop_halve.input</key>
                 <status>0x96</status>
+                <midino>0x34</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+                        <control>
+                <group>[Channel3]</group>
+                <key>NS4FX.decks[3].loopControls.loop_halve.input</key>
+                <status>0x86</status>
                 <midino>0x34</midino>
                 <options>
                     <script-binding/>
@@ -240,8 +303,17 @@
             </control>
             <control>
                 <group>[Channel4]</group>
-                <key>NS4FX.decks[4].manloop.loop_halve.input</key>
+                <key>NS4FX.decks[4].loopControls.loop_halve.input</key>
                 <status>0x97</status>
+                <midino>0x34</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel4]</group>
+                <key>NS4FX.decks[4].loopControls.loop_halve.input</key>
+                <status>0x87</status>
                 <midino>0x34</midino>
                 <options>
                     <script-binding/>
@@ -278,7 +350,17 @@
                 <group>[Shift]</group>
                 <key>NS4FX.shiftToggle</key>
                 <description>The shift key.</description>
-                <status>0x9F</status>
+                <status>0x90</status>
+                <midino>0x20</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Shift]</group>
+                <key>NS4FX.shiftToggle</key>
+                <description>The shift key.</description>
+                <status>0x80</status>
                 <midino>0x20</midino>
                 <options>
                     <script-binding/>
@@ -294,6 +376,15 @@
                 </options>
             </control>
             <control>
+                <group>[Channel1]</group>
+                <key>NS4FX.decks[1].hotcues[8].input</key>
+                <status>0x84</status>
+                <midino>0x17</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
                 <group>[Channel2]</group>
                 <key>NS4FX.decks[2].hotcues[4].input</key>
                 <status>0x85</status>
@@ -303,10 +394,28 @@
                 </options>
             </control>
             <control>
+                <group>[Channel2]</group>
+                <key>NS4FX.decks[2].hotcues[8].input</key>
+                <status>0x85</status>
+                <midino>0x17</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>            
+            <control>
                 <group>[Channel1]</group>
                 <key>NS4FX.decks[1].hotcues[3].input</key>
                 <status>0x84</status>
                 <midino>0x1A</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>NS4FX.decks[1].hotcues[7].input</key>
+                <status>0x84</status>
+                <midino>0x16</midino>
                 <options>
                     <script-binding/>
                 </options>
@@ -321,6 +430,15 @@
                 </options>
             </control>
             <control>
+                <group>[Channel3]</group>
+                <key>NS4FX.decks[3].hotcues[8].input</key>
+                <status>0x86</status>
+                <midino>0x17</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
                 <group>[Channel2]</group>
                 <key>NS4FX.decks[2].hotcues[3].input</key>
                 <status>0x85</status>
@@ -329,6 +447,15 @@
                     <script-binding/>
                 </options>
             </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>NS4FX.decks[2].hotcues[7].input</key>
+                <status>0x85</status>
+                <midino>0x16</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>            
             <control>
                 <group>[Channel1]</group>
                 <key>NS4FX.decks[1].hotcues[2].input</key>
@@ -339,10 +466,10 @@
                 </options>
             </control>
             <control>
-                <group>[Sampler4]</group>
-                <key>NS4FX.sampler[4].input</key>
-                <status>0x9F</status>
-                <midino>0x2B</midino>
+                <group>[Channel1]</group>
+                <key>NS4FX.decks[1].hotcues[6].input</key>
+                <status>0x84</status>
+                <midino>0x15</midino>
                 <options>
                     <script-binding/>
                 </options>
@@ -357,6 +484,15 @@
                 </options>
             </control>
             <control>
+                <group>[Channel4]</group>
+                <key>NS4FX.decks[4].hotcues[8].input</key>
+                <status>0x87</status>
+                <midino>0x17</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>            
+            <control>
                 <group>[Channel3]</group>
                 <key>NS4FX.decks[3].hotcues[3].input</key>
                 <status>0x86</status>
@@ -366,10 +502,28 @@
                 </options>
             </control>
             <control>
+                <group>[Channel3]</group>
+                <key>NS4FX.decks[3].hotcues[7].input</key>
+                <status>0x86</status>
+                <midino>0x16</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>            
+            <control>
                 <group>[Channel2]</group>
                 <key>NS4FX.decks[2].hotcues[2].input</key>
                 <status>0x85</status>
                 <midino>0x19</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>NS4FX.decks[2].hotcues[6].input</key>
+                <status>0x85</status>
+                <midino>0x15</midino>
                 <options>
                     <script-binding/>
                 </options>
@@ -383,11 +537,11 @@
                     <script-binding/>
                 </options>
             </control>
-            <control>
-                <group>[Sampler3]</group>
-                <key>NS4FX.sampler[3].input</key>
-                <status>0x9F</status>
-                <midino>0x2A</midino>
+                        <control>
+                <group>[Channel1]</group>
+                <key>NS4FX.decks[1].hotcues[5].input</key>
+                <status>0x84</status>
+                <midino>0x14</midino>
                 <options>
                     <script-binding/>
                 </options>
@@ -402,6 +556,15 @@
                 </options>
             </control>
             <control>
+                <group>[Channel4]</group>
+                <key>NS4FX.decks[4].hotcues[7].input</key>
+                <status>0x87</status>
+                <midino>0x16</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
                 <group>[Channel3]</group>
                 <key>NS4FX.decks[3].hotcues[2].input</key>
                 <status>0x86</status>
@@ -411,10 +574,28 @@
                 </options>
             </control>
             <control>
+                <group>[Channel3]</group>
+                <key>NS4FX.decks[3].hotcues[6].input</key>
+                <status>0x86</status>
+                <midino>0x15</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>            
+            <control>
                 <group>[Channel2]</group>
                 <key>NS4FX.decks[2].hotcues[1].input</key>
                 <status>0x85</status>
                 <midino>0x18</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>NS4FX.decks[2].hotcues[5].input</key>
+                <status>0x85</status>
+                <midino>0x14</midino>
                 <options>
                     <script-binding/>
                 </options>
@@ -438,19 +619,19 @@
                 </options>
             </control>
             <control>
-                <group>[Sampler2]</group>
-                <key>NS4FX.sampler[2].input</key>
-                <status>0x9F</status>
-                <midino>0x29</midino>
+                <group>[Channel4]</group>
+                <key>NS4FX.decks[4].hotcues[2].input</key>
+                <status>0x87</status>
+                <midino>0x19</midino>
                 <options>
                     <script-binding/>
                 </options>
             </control>
             <control>
                 <group>[Channel4]</group>
-                <key>NS4FX.decks[4].hotcues[2].input</key>
+                <key>NS4FX.decks[4].hotcues[6].input</key>
                 <status>0x87</status>
-                <midino>0x19</midino>
+                <midino>0x15</midino>
                 <options>
                     <script-binding/>
                 </options>
@@ -464,6 +645,15 @@
                     <script-binding/>
                 </options>
             </control>
+            <control>
+                <group>[Channel3]</group>
+                <key>NS4FX.decks[3].hotcues[5].input</key>
+                <status>0x86</status>
+                <midino>0x14</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>            
             <control>
                 <group>[Channel2]</group>
                 <key>NS4FX.decks[2].autoloop.roll4.input</key>
@@ -492,19 +682,19 @@
                 </options>
             </control>
             <control>
-                <group>[Sampler1]</group>
-                <key>NS4FX.sampler[1].input</key>
-                <status>0x9F</status>
-                <midino>0x28</midino>
+                <group>[Channel4]</group>
+                <key>NS4FX.decks[4].hotcues[1].input</key>
+                <status>0x87</status>
+                <midino>0x18</midino>
                 <options>
                     <script-binding/>
                 </options>
             </control>
             <control>
                 <group>[Channel4]</group>
-                <key>NS4FX.decks[4].hotcues[1].input</key>
+                <key>NS4FX.decks[4].hotcues[5].input</key>
                 <status>0x87</status>
-                <midino>0x18</midino>
+                <midino>0x14</midino>
                 <options>
                     <script-binding/>
                 </options>
@@ -647,6 +837,15 @@
                 </options>
             </control>
             <control>
+                <group>[Channel1]</group>
+                <key>NS4FX.decks[1].hotcues[8].input</key>
+                <status>0x94</status>
+                <midino>0x17</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
                 <group>[Channel3]</group>
                 <key>NS4FX.deckSwitch</key>
                 <description>Fires when a deck is disabled.</description>
@@ -684,6 +883,15 @@
                 </options>
             </control>
             <control>
+                <group>[Channel2]</group>
+                <key>NS4FX.decks[2].hotcues[8].input</key>
+                <status>0x95</status>
+                <midino>0x17</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
                 <group>[Channel1]</group>
                 <key>NS4FX.decks[1].hotcues[3].input</key>
                 <status>0x94</status>
@@ -693,10 +901,10 @@
                 </options>
             </control>
             <control>
-                <group>[Sampler4]</group>
-                <key>NS4FX.sampler[4].input</key>
-                <status>0x9F</status>
-                <midino>0x24</midino>
+                <group>[Channel1]</group>
+                <key>NS4FX.decks[1].hotcues[7].input</key>
+                <status>0x94</status>
+                <midino>0x16</midino>
                 <options>
                     <script-binding/>
                 </options>
@@ -730,6 +938,15 @@
                 </options>
             </control>
             <control>
+                <group>[Channel3]</group>
+                <key>NS4FX.decks[3].hotcues[8].input</key>
+                <status>0x96</status>
+                <midino>0x17</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
                 <group>[Channel2]</group>
                 <key>NS4FX.decks[2].hotcues[3].input</key>
                 <status>0x95</status>
@@ -738,6 +955,15 @@
                     <script-binding/>
                 </options>
             </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>NS4FX.decks[2].hotcues[7].input</key>
+                <status>0x95</status>
+                <midino>0x16</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>            
             <control>
                 <group>[Channel1]</group>
                 <key>NS4FX.decks[1].hotcues[2].input</key>
@@ -749,6 +975,15 @@
             </control>
             <control>
                 <group>[Channel1]</group>
+                <key>NS4FX.decks[1].hotcues[6].input</key>
+                <status>0x94</status>
+                <midino>0x15</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>            
+            <control>
+                <group>[Channel1]</group>
                 <key>NS4FX.decks[1].hotcues[1].input</key>
                 <status>0x94</status>
                 <midino>0x18</midino>
@@ -757,10 +992,10 @@
                 </options>
             </control>
             <control>
-                <group>[Sampler3]</group>
-                <key>NS4FX.sampler[3].input</key>
-                <status>0x9F</status>
-                <midino>0x23</midino>
+                <group>[Channel1]</group>
+                <key>NS4FX.decks[1].hotcues[5].input</key>
+                <status>0x94</status>
+                <midino>0x14</midino>
                 <options>
                     <script-binding/>
                 </options>
@@ -775,6 +1010,15 @@
                 </options>
             </control>
             <control>
+                <group>[Channel4]</group>
+                <key>NS4FX.decks[4].hotcues[8].input</key>
+                <status>0x97</status>
+                <midino>0x17</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
                 <group>[Channel3]</group>
                 <key>NS4FX.decks[3].hotcues[3].input</key>
                 <status>0x96</status>
@@ -784,10 +1028,28 @@
                 </options>
             </control>
             <control>
+                <group>[Channel3]</group>
+                <key>NS4FX.decks[3].hotcues[7].input</key>
+                <status>0x96</status>
+                <midino>0x16</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>            
+            <control>
                 <group>[Channel2]</group>
                 <key>NS4FX.decks[2].hotcues[2].input</key>
                 <status>0x95</status>
                 <midino>0x19</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>NS4FX.decks[2].hotcues[6].input</key>
+                <status>0x95</status>
+                <midino>0x15</midino>
                 <options>
                     <script-binding/>
                 </options>
@@ -802,6 +1064,15 @@
                 </options>
             </control>
             <control>
+                <group>[Channel3]</group>
+                <key>NS4FX.decks[3].hotcues[6].input</key>
+                <status>0x96</status>
+                <midino>0x15</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>            
+            <control>
                 <group>[Channel2]</group>
                 <key>NS4FX.decks[2].hotcues[1].input</key>
                 <status>0x95</status>
@@ -811,23 +1082,14 @@
                 </options>
             </control>
             <control>
-                <group>[Channel1]</group>
-                <key>NS4FX.decks[1].autoloop.auto4.input</key>
-                <status>0x94</status>
-                <midino>0x17</midino>
+                <group>[Channel2]</group>
+                <key>NS4FX.decks[2].hotcues[5].input</key>
+                <status>0x95</status>
+                <midino>0x14</midino>
                 <options>
                     <script-binding/>
                 </options>
-            </control>
-            <control>
-                <group>[Sampler2]</group>
-                <key>NS4FX.sampler[2].input</key>
-                <status>0x9F</status>
-                <midino>0x22</midino>
-                <options>
-                    <script-binding/>
-                </options>
-            </control>
+            </control>            
             <control>
                 <group>[Channel4]</group>
                 <key>NS4FX.decks[4].hotcues[3].input</key>
@@ -839,6 +1101,15 @@
             </control>
             <control>
                 <group>[Channel4]</group>
+                <key>NS4FX.decks[4].hotcues[7].input</key>
+                <status>0x97</status>
+                <midino>0x16</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>            
+            <control>
+                <group>[Channel4]</group>
                 <key>NS4FX.decks[4].hotcues[2].input</key>
                 <status>0x97</status>
                 <midino>0x19</midino>
@@ -846,6 +1117,15 @@
                     <script-binding/>
                 </options>
             </control>
+            <control>
+                <group>[Channel4]</group>
+                <key>NS4FX.decks[4].hotcues[6].input</key>
+                <status>0x97</status>
+                <midino>0x15</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>            
             <control>
                 <group>[Channel3]</group>
                 <key>NS4FX.decks[3].hotcues[1].input</key>
@@ -856,10 +1136,10 @@
                 </options>
             </control>
             <control>
-                <group>[Channel2]</group>
-                <key>NS4FX.decks[2].autoloop.auto4.input</key>
-                <status>0x95</status>
-                <midino>0x17</midino>
+                <group>[Channel3]</group>
+                <key>NS4FX.decks[3].hotcues[5].input</key>
+                <status>0x96</status>
+                <midino>0x14</midino>
                 <options>
                     <script-binding/>
                 </options>
@@ -874,15 +1154,6 @@
                 </options>
             </control>
             <control>
-                <group>[Sampler1]</group>
-                <key>NS4FX.sampler[1].input</key>
-                <status>0x9F</status>
-                <midino>0x21</midino>
-                <options>
-                    <script-binding/>
-                </options>
-            </control>
-            <control>
                 <group>[Channel4]</group>
                 <key>NS4FX.decks[4].hotcues[1].input</key>
                 <status>0x97</status>
@@ -892,62 +1163,17 @@
                 </options>
             </control>
             <control>
-                <group>[Channel3]</group>
-                <key>NS4FX.decks[3].autoloop.auto4.input</key>
-                <status>0x96</status>
-                <midino>0x17</midino>
-                <options>
-                    <script-binding/>
-                </options>
-            </control>
-            <control>
-                <group>[Channel2]</group>
-                <key>NS4FX.decks[2].autoloop.auto3.input</key>
-                <status>0x95</status>
-                <midino>0x16</midino>
-                <options>
-                    <script-binding/>
-                </options>
-            </control>
-            <control>
-                <group>[Channel1]</group>
-                <key>NS4FX.decks[1].autoloop.auto2.input</key>
-                <status>0x94</status>
-                <midino>0x15</midino>
-                <options>
-                    <script-binding/>
-                </options>
-            </control>
-            <control>
                 <group>[Channel4]</group>
-                <key>NS4FX.decks[4].autoloop.auto4.input</key>
+                <key>NS4FX.decks[4].hotcues[5].input</key>
                 <status>0x97</status>
-                <midino>0x17</midino>
+                <midino>0x14</midino>
                 <options>
                     <script-binding/>
                 </options>
-            </control>
-            <control>
-                <group>[Channel3]</group>
-                <key>NS4FX.decks[3].autoloop.auto3.input</key>
-                <status>0x96</status>
-                <midino>0x16</midino>
-                <options>
-                    <script-binding/>
-                </options>
-            </control>
-            <control>
-                <group>[Channel2]</group>
-                <key>NS4FX.decks[2].autoloop.auto2.input</key>
-                <status>0x95</status>
-                <midino>0x15</midino>
-                <options>
-                    <script-binding/>
-                </options>
-            </control>
+            </control>            
             <control>
                 <group>[Channel1]</group>
-                <key>NS4FX.decks[1].autoloop.auto1.input</key>
+                <key>NS4FX.decks[1].loopControls.loop_toggle.input</key>
                 <status>0x94</status>
                 <midino>0x40</midino>
                 <options>
@@ -964,26 +1190,8 @@
                 </options>
             </control>
             <control>
-                <group>[Channel4]</group>
-                <key>NS4FX.decks[4].autoloop.auto3.input</key>
-                <status>0x97</status>
-                <midino>0x16</midino>
-                <options>
-                    <script-binding/>
-                </options>
-            </control>
-            <control>
-                <group>[Channel3]</group>
-                <key>NS4FX.decks[3].autoloop.auto2.input</key>
-                <status>0x96</status>
-                <midino>0x15</midino>
-                <options>
-                    <script-binding/>
-                </options>
-            </control>
-            <control>
                 <group>[Channel2]</group>
-                <key>NS4FX.decks[2].autoloop.auto1.input</key>
+                <key>NS4FX.decks[2].loopControls.loop_toggle.input</key>
                 <status>0x95</status>
                 <midino>0x40</midino>
                 <options>
@@ -1000,17 +1208,8 @@
                 </options>
             </control>
             <control>
-                <group>[Channel4]</group>
-                <key>NS4FX.decks[4].autoloop.auto2.input</key>
-                <status>0x97</status>
-                <midino>0x15</midino>
-                <options>
-                    <script-binding/>
-                </options>
-            </control>
-            <control>
                 <group>[Channel3]</group>
-                <key>NS4FX.decks[3].autoloop.auto1.input</key>
+                <key>NS4FX.decks[3].loopControls.loop_toggle.input</key>
                 <status>0x96</status>
                 <midino>0x40</midino>
                 <options>
@@ -1028,7 +1227,7 @@
             </control>
             <control>
                 <group>[Channel4]</group>
-                <key>NS4FX.decks[4].autoloop.auto1.input</key>
+                <key>NS4FX.decks[4].loopControls.loop_toggle.input</key>
                 <status>0x97</status>
                 <midino>0x40</midino>
                 <options>
@@ -1842,15 +2041,6 @@
                 </options>
             </control>
             <control>
-                <group>[Channel1]</group>
-                <key>NS4FX.decks[1].gain.input</key>
-                <status>0xB0</status>
-                <midino>0x16</midino>
-                <options>
-                    <script-binding/>
-                </options>
-            </control>
-            <control>
                 <group>[EqualizerRack1_[Channel4]_Effect1]</group>
                 <key>NS4FX.decks[4].mid_eq.input</key>
                 <status>0xB3</status>
@@ -1864,15 +2054,6 @@
                 <key>NS4FX.decks[3].high_eq.input</key>
                 <status>0xB2</status>
                 <midino>0x17</midino>
-                <options>
-                    <script-binding/>
-                </options>
-            </control>
-            <control>
-                <group>[Channel2]</group>
-                <key>NS4FX.decks[2].gain.input</key>
-                <status>0xB1</status>
-                <midino>0x16</midino>
                 <options>
                     <script-binding/>
                 </options>
