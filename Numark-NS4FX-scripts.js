@@ -30,6 +30,9 @@ var ShiftLoadEjects = true;
 // should we show effect parameters when an effect is focused?
 var ShowFocusedEffectParameters = false;
 
+//use effect on deck 1+3 and 2+4 or just on active deck?
+var OnlyActiveDeckEffect = true;
+
 
 var NS4FX = {};
 
@@ -37,17 +40,33 @@ NS4FX.init = function(id, debug) {
     NS4FX.id = id;
     NS4FX.debug = debug;
 
-    // effects
-    NS4FX.effects = new components.ComponentContainer();
-    NS4FX.effects[1] = new NS4FX.EffectUnit([1, 3]);
-    NS4FX.effects[2] = new NS4FX.EffectUnit([2, 4]);
+    //effects
+    NS4FX.effectUnit = new NS4FX.EffectUnit();
+    var effects = [
+        {unit: 1, slot: 1, id: 9, meta:0.9},
+        { unit: 1, slot: 2, id: 9, meta:0.1},
+        {unit: 1, slot: 3, id: 10, meta:1},
+        {unit: 2, slot: 1, id: 8, meta:1},
+        {unit: 2, slot: 2, id:12, meta:1},
+        {unit: 2, slot: 3, id:18, meta:1}
+    ];
+
+    effects.forEach(function(effect) {
+        var group = '[EffectRack1_EffectUnit' + effect.unit + '_Effect' + effect.slot + ']';
+        engine.setParameter(group, 'meta', effect.meta);
+        engine.setValue(group, "clear", 1);
+        for (var i = 0; i < effect.id; ++i) {
+            engine.setValue(group, "effect_selector", 1);
+        }
+        
+    });
 
     // decks
     NS4FX.decks = new components.ComponentContainer();
-    NS4FX.decks[1] = new NS4FX.Deck(1, 0x00, NS4FX.effects[1]);
-    NS4FX.decks[2] = new NS4FX.Deck(2, 0x01, NS4FX.effects[2]);
-    NS4FX.decks[3] = new NS4FX.Deck(3, 0x02, NS4FX.effects[1]);
-    NS4FX.decks[4] = new NS4FX.Deck(4, 0x03, NS4FX.effects[2]);
+    NS4FX.decks[1] = new NS4FX.Deck(1, 0x00);
+    NS4FX.decks[2] = new NS4FX.Deck(2, 0x01);
+    NS4FX.decks[3] = new NS4FX.Deck(3, 0x02);
+    NS4FX.decks[4] = new NS4FX.Deck(4, 0x03);
 
     // set up two banks of samplers, 4 samplers each
     if (engine.getValue("[App]", "num_samplers") < 8) {
@@ -71,9 +90,14 @@ NS4FX.init = function(id, debug) {
     midi.sendSysexMsg(byteArray, byteArray.length);
 
     // initialize some leds
-    NS4FX.effects.forEachComponent(function (component) {
-        component.trigger();
+// Initialize effect LEDs
+    NS4FX.effectUnit.effects.forEach(function(effect) {
+        var button = NS4FX.effectUnit.effectButtons[effect.name];
+        if (button && button.trigger) {
+            button.trigger();
+        }
     });
+
     NS4FX.decks.forEachComponent(function (component) {
         component.trigger();
     });
@@ -217,243 +241,119 @@ NS4FX.shutdown = function() {
     midi.sendSysexMsg(byteArray, byteArray.length);
 };
 
+NS4FX.EffectUnit = function() {
+    var self = this;
+    this.deck1 = true;
+    this.deck2 = true;
 
-NS4FX.EffectUnit = function (unitNumbers) {
-    var eu = this;
-    this.unitNumbers = unitNumbers;
+    this.toggleEffect = function(effectName) {
+        var effect = this.effects.find(e => e.name === effectName);
+        if (!effect) return;
 
-    this.setCurrentUnit = function (newNumber) {
-        this.currentUnitNumber = newNumber;
-        this.group = '[EffectRack1_EffectUnit' + newNumber + ']';
-        this.reconnectComponents(function (component) {
-            // update [EffectRack1_EffectUnitX] groups
-            var unitMatch = component.group.match(script.effectUnitRegEx);
-            if (unitMatch !== null) {
-                component.group = eu.group;
-            } else {
-                // update [EffectRack1_EffectUnitX_EffectY] groups
-                var effectMatch = component.group.match(script.individualEffectRegEx);
-                if (effectMatch !== null) {
-                    component.group = '[EffectRack1_EffectUnit' +
-                                      eu.currentUnitNumber +
-                                      '_Effect' + effectMatch[2] + ']';
-                }
-            }
+        var group = '[EffectRack1_EffectUnit' + effect.unit + '_Effect' + 
+                    (this.effects.filter(e => e.unit === effect.unit).indexOf(effect) + 1) + ']';
+
+        // Falls derselbe Effekt gedrückt wird, deaktiviere ihn
+        if (this.activeEffect === effectName) {
+            engine.setValue(group, 'enabled', 0);
+            this.activeEffect = null;
+        } else {
+            // Deaktiviere alle Effekte
+            this.effects.forEach(function(e) {
+                var effGroup = '[EffectRack1_EffectUnit' + e.unit + '_Effect' + 
+                               (self.effects.filter(x => x.unit === e.unit).indexOf(e) + 1) + ']';
+                engine.setValue(effGroup, 'enabled', 0);
+            });
+
+            // Aktiviere den neuen Effekt
+            engine.setValue(group, 'enabled', 1);
+            this.activeEffect = effectName;
+        }
+
+        this.updateEffectButtons();
+    };
+
+    this.updateEffectButtons = function() {
+        var self = this;
+        this.effects.forEach(function(effect) {
+            var group = '[EffectRack1_EffectUnit' + effect.unit + '_Effect' + 
+                        (self.effects.filter(e => e.unit === effect.unit).indexOf(effect) + 1) + ']';
+            var isEnabled = engine.getValue(group, 'enabled');
+            self.effectButtons[effect.name].output(isEnabled ? 0x7F : 0x00);
         });
     };
 
-    this.setCurrentUnit(unitNumbers[0]);
-
-    this.dryWetKnob = new components.Encoder({
-        group: this.group,
+    this.dryWetKnob = new components.Pot({
+        midi: [0xB8, 0x04],
+        group: '[EffectRack1_EffectUnit1]',
         inKey: 'mix',
-        input: function (channel, control, value, status, group) {
-            if (value === 1) {
-                this.inSetParameter(this.inGetParameter() + 0.05);
-            } else if (value === 127) {
-                this.inSetParameter(this.inGetParameter() - 0.05);
-            }
-        },
-    });
-
-    this.EffectUnitTouchStrip = function() {
-        components.Pot.call(this);
-        this.firstValueRecived = true;
-        this.connect();
-    };
-    this.EffectUnitTouchStrip.prototype = new components.Pot({
-        relative: true, // this disables soft takeover
-        input: function (channel, control, value, status, group) {
-            // never do soft takeover when the touchstrip is used
-            engine.softTakeover(this.group, this.inKey, false);
-            components.Pot.prototype.input.call(this, channel, control, value, status, group);
-        },
-        connect: function() {
-            this.focus_connection = engine.makeConnection(eu.group, "focused_effect", this.onFocusChange.bind(this));
-            this.focus_connection.trigger();
-        },
-        disconnect: function() {
-            this.focus_connection.disconnect();
-        },
-        onFocusChange: function(value, group, control) {
-            if (value === 0) {
-                this.group = eu.group;
-                this.inKey = 'super1';
-            }
-            else {
-                this.group = '[EffectRack1_EffectUnit' + eu.currentUnitNumber + '_Effect' + value + ']';
-                this.inKey = 'meta';
-            }
-        },
-    });
-
-    this.BpmTapButton = function () {
-        this.group = '[Channel' + eu.currentUnitNumber + ']';
-        this.midi = [0x97 + eu.currentUnitNumber, 0x04];
-        components.Button.call(this);
-    };
-    this.BpmTapButton.prototype = new components.Button({
-        type: components.Button.prototype.types.push,
-        key: 'bpm_tap',
-        off: 0x01,
-        connect: function () {
-            this.group = '[Channel' + eu.currentUnitNumber + ']';
-            components.Button.prototype.connect.call(this);
-        },
-        input: function (channel, control, value, status, group) {
-            components.Button.prototype.input.call(this, channel, control, value, status, group);
-            if (this.isPress(channel, control, value, status)) {
-                eu.forEachComponent(function (component) {
-                    if (component.tap !== undefined && typeof component.tap === 'function') {
-                        component.tap();
-                    }
-                });
-            }
-            else {
-                eu.forEachComponent(function (component) {
-                    if (component.untap !== undefined) {
-                        component.untap();
-                    }
-                });
-            }
-        },
-    });
-
-    this.EffectEnableButton = function (number) {
-        this.number = number;
-        this.group = '[EffectRack1_EffectUnit' + eu.currentUnitNumber +
-                      '_Effect' + this.number + ']';
-        this.midi = [0x97 + eu.currentUnitNumber, this.number - 1];
-        this.flash_timer = null;
-
-        components.Button.call(this);
-    };
-    this.EffectEnableButton.prototype = new components.Button({
-        type: components.Button.prototype.types.powerWindow,
-        outKey: 'enabled',
-        inKey: 'enabled',
-        off: 0x01,
-        tap: function() {
-            this.inKey = 'enabled';
-            this.type = components.Button.prototype.types.toggle;
-            this.inToggle = this.toggle_focused_effect;
-        },
-        untap: function() {
-            this.type = components.Button.prototype.types.powerWindow;
-            this.inToggle = components.Button.prototype.inToggle;
-        },
-        shift:  function() {
-            this.inKey = 'next_effect';
-            this.type = components.Button.prototype.types.push;
-        },
-        unshift: function() {
-            this.inKey = 'enabled';
-            this.type = components.Button.prototype.types.powerWindow;
-        },
-        output: function(value, group, control) {
-            var focused_effect = engine.getValue(eu.group, "focused_effect");
-            if (focused_effect !== this.number) {
-                engine.stopTimer(this.flash_timer);
-                this.flash_timer = null;
-                components.Button.prototype.output.call(this, value, group, control);
-            }
-            else {
-                this.startFlash();
-            }
-        },
-        toggle_focused_effect: function() {
-            if (engine.getValue(eu.group, "focused_effect") === this.number) {
-                engine.setValue(eu.group, "focused_effect", 0);
-            }
-            else {
-                engine.setValue(eu.group, "focused_effect", this.number);
-            }
-        },
-        connect: function() {
-            components.Button.prototype.connect.call(this);
-            this.fx_connection = engine.makeConnection(eu.group, "focused_effect", this.onFocusChange.bind(this));
-        },
-        disconnect: function() {
-            components.Button.prototype.disconnect.call(this);
-            this.fx_connection.disconnect();
-        },
-        onFocusChange: function(value, group, control) {
-            if (value === this.number) {
-                this.startFlash();
-            }
-            else {
-                this.stopFlash();
-            }
-        },
-        startFlash: function() {
-            // already flashing
-            if (this.flash_timer) {
-                engine.stopTimer(this.flash_timer);
-            }
-
-            this.flash_state = false;
-            this.send(this.on);
-
-            var time = 500;
-            if (this.inGetValue() > 0) {
-                time = 150;
-            }
-
-            var button = this;
-            this.flash_timer = engine.beginTimer(time, () => {
-                if (button.flash_state) {
-                    button.send(button.on);
-                    button.flash_state = false;
-                }
-                else {
-                    button.send(button.off);
-                    button.flash_state = true;
-                }
-            });
-        },
-        stopFlash: function() {
-            engine.stopTimer(this.flash_timer);
-            this.flash_timer = null;
-            this.trigger();
-        },
-    });
-
-    this.show_focus_connection = engine.makeConnection(eu.group, "focused_effect", function(focused_effect, group, control) {
-        if (focused_effect === 0) {
-            engine.setValue(eu.group, "show_focus", 0);
-            if (ShowFocusedEffectParameters) {
-                engine.setValue(eu.group, "show_parameters", 0);
-            }
-        } else {
-            engine.setValue(eu.group, "show_focus", 1);
-            if (ShowFocusedEffectParameters) {
-                engine.setValue(eu.group, "show_parameters", 1);
-            }
-        }
-    }.bind(this));
-    this.show_focus_connection.trigger();
-
-    this.touch_strip = new this.EffectUnitTouchStrip();
-    this.enableButtons = new components.ComponentContainer();
-    for (var n = 1; n <= 3; n++) {
-        this.enableButtons[n] = new this.EffectEnableButton(n);
-    }
-
-    this.bpmTap = new this.BpmTapButton();
-
-    this.enableButtons.reconnectComponents();
-
-    this.forEachComponent(function (component) {
-        if (component.group === undefined) {
-            component.group = eu.group;
+        input: function(channel, control, value, status, group) {
+            var newValue = value / 127;
+            engine.setValue('[EffectRack1_EffectUnit1]', 'mix', newValue);
+            engine.setValue('[EffectRack1_EffectUnit2]', 'mix', newValue);
         }
     });
-};
+
+    this.effects = [
+        {name: 'hpf', status: 0x98, control: 0x00, unit: 1},
+        {name: 'lpf', status: 0x98, control: 0x01, unit: 1},
+        {name: 'flanger', status: 0x98, control: 0x02, unit: 1},
+        {name: 'echo', status: 0x99, control: 0x03, unit: 2},
+        {name: 'reverb', status: 0x99, control: 0x04, unit: 2},
+        {name: 'phaser', status: 0x99, control: 0x05, unit: 2}
+    ];
+    this.activeEffect = null;
+
+    this.effectButtons = {};
+    this.effects.forEach(function(effect) {
+        self.effectButtons[effect.name] = new components.Button({
+            midi: [effect.status, effect.control],
+            group: '[EffectRack1_EffectUnit' + effect.unit + ']',
+            inKey: 'enabled',
+            input: function(channel, control, value, status, group) {
+                if (value === 0x7F) {
+                    self.toggleEffect(effect.name);
+                }
+            }
+        });
+    });
+
+    this.setEffectUnitsForChannel = function(channel, value) {
+        var unit1 = channel === 1 ? "[EffectRack1_EffectUnit1]" : "[EffectRack1_EffectUnit1]";
+        var unit2 = channel === 1 ? "[EffectRack1_EffectUnit2]" : "[EffectRack1_EffectUnit2]";
+        var groupKey = "group_[Channel" + channel + "]_enable";
+        var newValue = (value === 0x01 || value === 0x02) ? 1 : 0;
+    
+        engine.setValue(unit1, groupKey, newValue);
+        engine.setValue(unit2, groupKey, newValue);
+    };
+    
+    // Linker Switch (Deck 1)
+    this.leftSwitch = function(channel, control, value, status, group) {
+        if (this.deck1 || !OnlyActiveDeckEffect) {
+            this.setEffectUnitsForChannel(1, value);
+        }
+        if (!this.deck1 || !OnlyActiveDeckEffect) {
+            this.setEffectUnitsForChannel(3, value);
+        }
+    };
+    
+    // Rechter Switch (Deck 2)
+    this.rightSwitch = function(channel, control, value, status, group) {
+        if (this.deck2 || !OnlyActiveDeckEffect) {
+            this.setEffectUnitsForChannel(2, value);
+        }
+        if (!this.deck2 || !OnlyActiveDeckEffect) {
+            this.setEffectUnitsForChannel(4, value);
+        }
+    };
+    
+}
+
 NS4FX.EffectUnit.prototype = new components.ComponentContainer();
 
-NS4FX.Deck = function(number, midi_chan, effects_unit) {
+NS4FX.Deck = function(number, midi_chan) {
     var deck = this;
-    var eu = effects_unit;
     this.active = (number == 1 || number == 2);
     
 
@@ -606,69 +506,91 @@ NS4FX.Deck = function(number, midi_chan, effects_unit) {
         this.hotcue_buttons[i] = new components.HotcueButton({
             midi: [0x94 + midi_chan, 0x18 + i - 1],
             number: i,
-            sendShifted: true,
-            shiftControl: true,
-            shiftOffset: 8,
+            //sendShifted: true,
+            //shiftControl: true,
+            //shiftOffset: 8,
             input: function(channel, control, value, status, group) {
+                var isShifted = (control == (0x18 + this.number -1 + 8));
+                
                 if (value === 0x7F) { // Hotcue gedrückt
-                    this.oldPosition = engine.getValue(group, "playposition");
-                    this.wasPlaying = engine.getValue(group, "play");
-                    hotcuePressed = true;
-                    playPressedDuringHotcue = false;
-                    
-                    engine.setValue(group, "hotcue_" + this.number + "_goto", 1);
-                    
-                    if (!this.wasPlaying) {
-                        engine.setValue(group, "play", 1);
+                    var hotcueExists = engine.getValue(group, "hotcue_" + this.number + "_enabled");
+                    if (isShifted && hotcueExists){
+                        engine.setValue(group, "hotcue_" + this.number + "_clear", 1);
                     }
-                } else { // Hotcue losgelassen
-                    if (!this.wasPlaying && !playPressedDuringHotcue) {
-                        engine.setValue(group, "play", 0);
+                    else if (hotcueExists) {
+                        // Wenn Hotcue existiert, gehe zu dieser Position
+                        this.oldPosition = engine.getValue(group, "playposition");
+                        this.wasPlaying = engine.getValue(group, "play");
+                        hotcuePressed = true;
+                        playPressedDuringHotcue = false;
+                        
                         engine.setValue(group, "hotcue_" + this.number + "_goto", 1);
+                        
+                        if (!this.wasPlaying) {
+                            engine.setValue(group, "play", 1);
+                        }
+                    } else {
+                        // Wenn kein Hotcue existiert, setze einen neuen
+                        engine.setValue(group, "hotcue_" + this.number + "_set", 1);
                     }
-                    hotcuePressed = false;
+                } else if (!isShifted){ // Hotcue losgelassen
+                    if (hotcuePressed) {
+                        if (!this.wasPlaying && !playPressedDuringHotcue) {
+                            engine.setValue(group, "play", 0);
+                            engine.setValue(group, "hotcue_" + this.number + "_goto", 1);
+                        }
+                        hotcuePressed = false;
+                    }
                 }
-            }
+            },
+            output: function(value) {
+                midi.sendShortMsg(this.midi[0], this.midi[1], value ? 0x7F : 0x00);
+            },
+        
         });
 
         //cue buttons 5 - 8
         this.hotcue_buttons[9-i] = new components.HotcueButton({
             midi: [0x94 + midi_chan, 0x18 - i],
-            number:  9 - i,
-            sendShifted: true,
-            shiftControl: true,
-            shiftOffset: 8,
+            number: 9-i,
             input: function(channel, control, value, status, group) {
+                var isShifted = (control == (0x18 + this.number - 1));
                 if (value === 0x7F) { // Hotcue gedrückt
-                    this.oldPosition = engine.getValue(group, "playposition");
-                    this.wasPlaying = engine.getValue(group, "play");
-                    hotcuePressed = true;
-                    playPressedDuringHotcue = false;
-                    
-                    engine.setValue(group, "hotcue_" + this.number + "_goto", 1);
-                    
-                    if (!this.wasPlaying) {
-                        engine.setValue(group, "play", 1);
+                    var hotcueExists = engine.getValue(group, "hotcue_" + this.number + "_enabled");
+                    if (isShifted && hotcueExists){
+                        engine.setValue(group, "hotcue_" + this.number + "_clear", 1);
                     }
-                } else { // Hotcue losgelassen
-                    if (!this.wasPlaying && !playPressedDuringHotcue) {
-                        engine.setValue(group, "play", 0);
+                    else if (hotcueExists) {
+                        // Wenn Hotcue existiert, gehe zu dieser Position
+                        this.oldPosition = engine.getValue(group, "playposition");
+                        this.wasPlaying = engine.getValue(group, "play");
+                        hotcuePressed = true;
+                        playPressedDuringHotcue = false;
+                        
                         engine.setValue(group, "hotcue_" + this.number + "_goto", 1);
+                        
+                        if (!this.wasPlaying) {
+                            engine.setValue(group, "play", 1);
+                        }
+                    } else {
+                        // Wenn kein Hotcue existiert, setze einen neuen
+                        engine.setValue(group, "hotcue_" + this.number + "_set", 1);
+                        print("Hotcue " + this.number + " set");
                     }
-                    hotcuePressed = false;
+                } else if (!isShifted){ // Hotcue losgelassen
+                    if (hotcuePressed) {
+                        if (!this.wasPlaying && !playPressedDuringHotcue) {
+                            engine.setValue(group, "play", 0);
+                            engine.setValue(group, "hotcue_" + this.number + "_goto", 1);
+                        }
+                        hotcuePressed = false;
+                    }
                 }
-            }
-        });
-
-        // sampler buttons 5-8
-        this.sampler_buttons[i] = new components.SamplerButton({
-            midi: [0x94 + midi_chan, 0x18 + i - 1],
-            sendShifted: true,
-            shiftControl: true,
-            shiftOffset: 8,
-            number: i+4,
-            loaded: 0x00,
-            playing: 0x7F,
+            },
+            output: function(value) {
+                midi.sendShortMsg(this.midi[0], this.midi[1], value ? 0x7F : 0x00);
+            },
+        
         });
     }
     this.hotcues = this.hotcue_buttons;
@@ -740,7 +662,7 @@ NS4FX.Deck = function(number, midi_chan, effects_unit) {
                 }
             },
             output: function(value) {
-                this.send(value ? 0x7F : 0x00);
+                this.send(value ? 0x7F : 0x01);
             }
         }),
         
@@ -756,7 +678,7 @@ NS4FX.Deck = function(number, midi_chan, effects_unit) {
                 }
             },
             output: function(value) {
-                this.send(value ? 0x7F : 0x00);
+                this.send(value ? 0x7F : 0x01);
             }
         }),
         
@@ -773,7 +695,7 @@ NS4FX.Deck = function(number, midi_chan, effects_unit) {
                 }
             },
             output: function(value) {
-                this.send(value ? 0x7F : 0x00);
+                this.send(value ? 0x7F : 0x01);
             }
         }),
         
@@ -790,7 +712,7 @@ NS4FX.Deck = function(number, midi_chan, effects_unit) {
                 }
             },
             output: function(value) {
-                this.send(value ? 0x7F : 0x00);
+                this.send(value ? 0x7F : 0x01);
             }
         }),
         reloop: new components.Button({
@@ -813,7 +735,7 @@ NS4FX.Deck = function(number, midi_chan, effects_unit) {
                 }
             },
             output: function(value) {
-                this.send(value ? 0x7F : 0x00);
+                this.send(value ? 0x7F : 0x01);
             },
             connect: function() {
                 this.connections.push(
@@ -839,7 +761,7 @@ NS4FX.Deck = function(number, midi_chan, effects_unit) {
                 }
             },
             output: function(value) {
-                this.send(value ? 0x7F : 0x00);
+                this.send(value ? 0x7F : 0x01);
             },
             connect: function() {
                 this.connections.push(
@@ -856,86 +778,6 @@ NS4FX.Deck = function(number, midi_chan, effects_unit) {
         
     });
 
-    this.pad_mode = new components.Component({
-        input: function (channel, control, value, status, group) {
-            // only handle button down events
-            if (value != 0x7F) return;
-
-            var shifted_hotcues = deck.sampler_buttons;
-            var normal_hotcues = deck.hotcue_buttons;
-            if (UseCueAsSampler) {
-                shifted_hotcues = deck.hotcue_buttons;
-                normal_hotcues = deck.sampler_buttons;
-            }
-
-            // if shifted, set a special mode
-            if (this.isShifted) {
-                // manual loop
-                if (control == 0x0E) {
-                    deck.manloop = deck.alternate_manloop;
-                    deck.manloop.reconnectComponents();
-                }
-                // auto loop
-                else if (control == 0x06) {
-                    deck.autoloop = deck.alternate_autoloop;
-                    deck.autoloop.reconnectComponents();
-                }
-
-                // hotcue sampler
-                if (control == 0x0B) {
-                    deck.hotcues.forEachComponent(function(component) {
-                        component.disconnect();
-                    });
-                    deck.hotcues = shifted_hotcues;
-                    deck.hotcues.reconnectComponents();
-                }
-                // reset hotcues in all other modes
-                else {
-                    deck.hotcues.forEachComponent(function(component) {
-                        component.disconnect();
-                    });
-                    deck.hotcues = deck.hotcue_buttons;
-                    deck.hotcues.reconnectComponents();
-                }
-            }
-            // otherwise set a normal mode
-            else {
-                // manual loop
-                if (control == 0x0E) {
-                    deck.manloop = deck.normal_manloop;
-                    deck.manloop.reconnectComponents();
-                }
-                // auto loop
-                else if (control == 0x06) {
-                    deck.autoloop = deck.normal_autoloop;
-                    deck.autoloop.reconnectComponents();
-                }
-
-                // hotcue sampler
-                if (control == 0x0B) {
-                    deck.hotcues.forEachComponent(function(component) {
-                        component.disconnect();
-                    });
-                    deck.hotcues = normal_hotcues;
-                    deck.hotcues.reconnectComponents();
-                }
-                // reset hotcues
-                else {
-                    deck.hotcues.forEachComponent(function(component) {
-                        component.disconnect();
-                    });
-                    deck.hotcues = deck.hotcue_buttons;
-                    deck.hotcues.reconnectComponents();
-                }
-            }
-        },
-        shift: function() {
-            this.isShifted = true;
-        },
-        unshift: function() {
-            this.isShifted = false;
-        },
-    });
 
     this.EqEffectKnob = function (group, in_key, fx_key, filter_knob) {
         this.unshift_group = group;
@@ -973,28 +815,25 @@ NS4FX.Deck = function(number, midi_chan, effects_unit) {
         },
         connect: function() {
             // enable soft takeover on our controls
-            for (var i = 1; i <= 3; i ++) {
-                var group = '[EffectRack1_EffectUnit' + eu.currentUnitNumber + '_Effect' + i + ']';
+            for (var i = 1; i <= 3; i++) {
+                var group = '[EffectRack1_EffectUnit1_Effect' + i + ']';
                 engine.softTakeover(group, this.fx_key, true);
             }
             components.Pot.prototype.connect.call(this);
-        },
+        },        
         shift: function() {
-            var focused_effect = engine.getValue(eu.group, "focused_effect");
+            var focused_effect = engine.getValue('[EffectRack1_EffectUnit1]', "focused_effect");
             if (focused_effect === 0) {
-                // we need this here so that shift+filter works with soft
-                // takeover because touching the touch strip disables it each
-                // time
                 if (this.shift_key) {
-                    engine.softTakeover(eu.group, this.shift_key, true);
-                    this.switchControl(eu.group, this.shift_key);
+                    engine.softTakeover('[EffectRack1_EffectUnit1]', this.shift_key, true);
+                    this.switchControl('[EffectRack1_EffectUnit1]', this.shift_key);
                 }
-            }
-            else {
-                var group = '[EffectRack1_EffectUnit' + eu.currentUnitNumber + '_Effect' + focused_effect + ']';
+            } else {
+                var group = '[EffectRack1_EffectUnit1_Effect' + focused_effect + ']';
                 this.switchControl(group, this.fx_key);
             }
         },
+        
         unshift: function() {
             this.switchControl(this.unshift_group, this.unshift_key);
         },
@@ -1013,15 +852,16 @@ NS4FX.Deck = function(number, midi_chan, effects_unit) {
     this.low_eq = new this.EqEffectKnob(eq_group, 'parameter1', 'parameter5');
 
     this.filter = new this.EqEffectKnob(
-        '[QuickEffectRack1_' + this.currentDeck + ']',
-        'super1',
-        'parameter1',
-        true);
+    '[QuickEffectRack1_' + this.currentDeck + ']',
+    'super1',
+    'parameter1',
+    true);
 
     this.gain = new this.EqEffectKnob(
-        this.currentDeck,
-        'pregain',
-        'parameter2');
+    this.currentDeck,
+    'pregain',
+    'parameter2');
+
 
     this.reconnectComponents(function (c) {
         if (c.group === undefined) {
@@ -1422,10 +1262,10 @@ NS4FX.deckSwitch = function (channel, control, value, status, group) {
 
     // change effects racks
     if (NS4FX.decks[deck].active && (channel == 0x00 || channel == 0x02)) {
-        NS4FX.effects[1].setCurrentUnit(deck);
+        NS4FX.effectUnit.deck1 = (deck == 1);
     }
     else if (NS4FX.decks[deck].active && (channel == 0x01 || channel == 0x03)) {
-        NS4FX.effects[2].setCurrentUnit(deck);
+        NS4FX.effectUnit.deck2 = (deck == 2);
     }
 
     // also zero vu meters
@@ -1491,7 +1331,6 @@ NS4FX.shiftToggle = function (channel, control, value, status, group) {
     if (NS4FX.shift) {
         NS4FX.decks.shift();
         NS4FX.sampler_all.shift();
-        NS4FX.effects.shift();
         NS4FX.browse.shift();
         NS4FX.head_gain.shift();
 
@@ -1504,7 +1343,6 @@ NS4FX.shiftToggle = function (channel, control, value, status, group) {
     else {
         NS4FX.decks.unshift();
         NS4FX.sampler_all.unshift();
-        NS4FX.effects.unshift();
         NS4FX.browse.unshift();
         NS4FX.head_gain.unshift();
     }
