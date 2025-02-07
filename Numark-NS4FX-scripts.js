@@ -31,14 +31,15 @@ var ShiftLoadEjects = true;
 var ShowFocusedEffectParameters = false;
 
 //use effect on deck 1+3 and 2+4 or just on active deck?
-var OnlyActiveDeckEffect = true;
-
+var OnlyActiveDeckEffect = false;
 
 var NS4FX = {};
 
 NS4FX.init = function(id, debug) {
     NS4FX.id = id;
     NS4FX.debug = debug;
+    //deck switching sends the command 2 times, from current and next
+    NS4FX.ignore_deck_switch = true;
 
     //effects
     NS4FX.effectUnit = new NS4FX.EffectUnit();
@@ -245,6 +246,8 @@ NS4FX.EffectUnit = function() {
     var self = this;
     this.deck1 = true;
     this.deck2 = true;
+    this.switch_active_left = false;
+    this.switch_active_right = false;
 
     this.toggleEffect = function(effectName) {
         var effect = this.effects.find(e => e.name === effectName);
@@ -279,7 +282,7 @@ NS4FX.EffectUnit = function() {
             var group = '[EffectRack1_EffectUnit' + effect.unit + '_Effect' + 
                         (self.effects.filter(e => e.unit === effect.unit).indexOf(effect) + 1) + ']';
             var isEnabled = engine.getValue(group, 'enabled');
-            self.effectButtons[effect.name].output(isEnabled ? 0x7F : 0x00);
+            self.effectButtons[effect.name].output(isEnabled ? 0x7F : 0x01);
         });
     };
 
@@ -318,36 +321,57 @@ NS4FX.EffectUnit = function() {
         });
     });
 
-    this.setEffectUnitsForChannel = function(channel, value) {
-        var unit1 = channel === 1 ? "[EffectRack1_EffectUnit1]" : "[EffectRack1_EffectUnit1]";
-        var unit2 = channel === 1 ? "[EffectRack1_EffectUnit2]" : "[EffectRack1_EffectUnit2]";
+    this.setEffectUnitsForChannel = function(channel, active) {
+        var unit1 = "[EffectRack1_EffectUnit1]";
+        var unit2 = "[EffectRack1_EffectUnit2]";
         var groupKey = "group_[Channel" + channel + "]_enable";
-        var newValue = (value === 0x01 || value === 0x02) ? 1 : 0;
-    
-        engine.setValue(unit1, groupKey, newValue);
-        engine.setValue(unit2, groupKey, newValue);
+
+        engine.setValue(unit1, groupKey, active);
+        engine.setValue(unit2, groupKey, active);
+
+        if (channel === 1 || channel === 3){
+            this.switch_active_left = active;
+        } else {
+            this.switch_active_right = active;
+        }
     };
     
     // Linker Switch (Deck 1)
     this.leftSwitch = function(channel, control, value, status, group) {
-        if (this.deck1 || !OnlyActiveDeckEffect) {
-            this.setEffectUnitsForChannel(1, value);
-        }
-        if (!this.deck1 || !OnlyActiveDeckEffect) {
-            this.setEffectUnitsForChannel(3, value);
-        }
+        var active = value !== 0x00;
+        var inactiveDeck = this.deck1 ? 3 : 1;
+        var activeDeck = this.deck1 ? 1 : 3;
+        var isActive = deck => (deck === activeDeck) || !OnlyActiveDeckEffect;
+    
+        this.setEffectUnitsForChannel(inactiveDeck, isActive(inactiveDeck) && active);
+        this.setEffectUnitsForChannel(activeDeck, isActive(activeDeck) && active);
     };
     
-    // Rechter Switch (Deck 2)
     this.rightSwitch = function(channel, control, value, status, group) {
-        if (this.deck2 || !OnlyActiveDeckEffect) {
-            this.setEffectUnitsForChannel(2, value);
-        }
-        if (!this.deck2 || !OnlyActiveDeckEffect) {
-            this.setEffectUnitsForChannel(4, value);
-        }
-    };
+        var active = value !== 0x00;
+        var inactiveDeck = this.deck2 ? 4 : 2;
+        var activeDeck = this.deck2 ? 2 : 4;
+        var isActive = deck => (deck === activeDeck) || !OnlyActiveDeckEffect;
     
+        this.setEffectUnitsForChannel(inactiveDeck, isActive(inactiveDeck) && active);
+        this.setEffectUnitsForChannel(activeDeck, isActive(activeDeck) && active);
+    };
+
+    this.updateEffectOnDeckSwitch = function(leftSide){
+        if (!OnlyActiveDeckEffect){
+            return;
+        }
+
+        if (leftSide) {
+            var active = this.switch_active_left ? 0x01 : 0x00;
+            this.leftSwitch(0, 0, active, 0, 0)
+        } else {
+            //var func = this.rightSwitch;
+            var active = this.switch_active_right ? 0x01 : 0x00;
+            this.rightSwitch(0, 0, active, 0, 0);
+        }
+
+    }
 }
 
 NS4FX.EffectUnit.prototype = new components.ComponentContainer();
@@ -417,6 +441,15 @@ NS4FX.Deck = function(number, midi_chan) {
             midi.sendShortMsg(0xB0 | midi_chan, 0x06, spinner);
         },
     });
+
+    this.orientation = new components.Button({
+        midi: [0xB0 -1 + midi_chan, 0x1E],
+        input: function(channel, control, value, status) {
+            var desiredOrientation = [1,0,2][value]
+            engine.setValue(this.group, "orientation", desiredOrientation);
+        },
+    });
+    
 
     this.play_button = new components.PlayButton({
         midi: [0x90 + midi_chan, 0x00],
@@ -506,9 +539,6 @@ NS4FX.Deck = function(number, midi_chan) {
         this.hotcue_buttons[i] = new components.HotcueButton({
             midi: [0x94 + midi_chan, 0x18 + i - 1],
             number: i,
-            //sendShifted: true,
-            //shiftControl: true,
-            //shiftOffset: 8,
             input: function(channel, control, value, status, group) {
                 var isShifted = (control == (0x18 + this.number -1 + 8));
                 
@@ -544,9 +574,9 @@ NS4FX.Deck = function(number, midi_chan) {
                 }
             },
             output: function(value) {
-                midi.sendShortMsg(this.midi[0], this.midi[1], value ? 0x7F : 0x00);
-            },
-        
+                var brightness = value ? 0x7F : 0x01;
+                midi.sendShortMsg(this.midi[0], this.midi[1], brightness); // Zweites Byte
+            },      
         });
 
         //cue buttons 5 - 8
@@ -588,7 +618,7 @@ NS4FX.Deck = function(number, midi_chan) {
                 }
             },
             output: function(value) {
-                midi.sendShortMsg(this.midi[0], this.midi[1], value ? 0x7F : 0x00);
+                midi.sendShortMsg(this.midi[0], this.midi[1], value ? 0x7F : 0x01);
             },
         
         });
@@ -751,11 +781,23 @@ NS4FX.Deck = function(number, midi_chan) {
             input: function(channel, control, value, status) {
                 if (value === 0x7F) { // Button pressed
                     var loopEnabled = engine.getValue(this.group, "loop_enabled");
+                    var loopStartPosition = engine.getValue(this.group, "loop_start_position");
+                    var loopEndPosition = engine.getValue(this.group, "loop_end_position");
+                    var currentPosition = engine.getValue(this.group, "playposition");
+                    var trackSamples = engine.getValue(this.group, "track_samples");
+                    
+                    // Konvertiere currentPosition zu Samples
+                    var currentSamplePosition = currentPosition * trackSamples;
+                    
                     if (loopEnabled) {
                         // Wenn ein Loop aktiv ist, deaktivieren wir ihn
                         engine.setValue(this.group, "loop_enabled", 0);
+                    } else if (loopStartPosition >= 0 && loopEndPosition > loopStartPosition &&
+                               currentSamplePosition >= loopStartPosition && currentSamplePosition <= loopEndPosition) {
+                        // Wenn wir uns innerhalb eines definierten Loops befinden, aktivieren wir ihn
+                        engine.setValue(this.group, "loop_enabled", 1);
                     } else {
-                        // Wenn kein Loop aktiv ist, setzen wir einen neuen Loop an der aktuellen Position
+                        // Ansonsten setzen wir einen neuen Loop
                         engine.setValue(this.group, "beatloop_activate", 1);
                     }
                 }
@@ -776,6 +818,7 @@ NS4FX.Deck = function(number, midi_chan) {
             }
         })
         
+          
     });
 
 
@@ -1257,16 +1300,25 @@ NS4FX.wheelToggle = function (channel, control, value, status, group) {
 };
 
 NS4FX.deckSwitch = function (channel, control, value, status, group) {
+    this.ignore_deck_switch = !this.ignore_deck_switch;
+
+    if (!this.ignore_deck_switch){
+        return;
+    }
+
     var deck = channel + 1;
     NS4FX.decks[deck].setActive(value == 0x7F);
 
     // change effects racks
     if (NS4FX.decks[deck].active && (channel == 0x00 || channel == 0x02)) {
         NS4FX.effectUnit.deck1 = (deck == 1);
+        var left_side = true;
     }
     else if (NS4FX.decks[deck].active && (channel == 0x01 || channel == 0x03)) {
         NS4FX.effectUnit.deck2 = (deck == 2);
+        var left_side = false;
     }
+    NS4FX.effectUnit.updateEffectOnDeckSwitch(left_side);
 
     // also zero vu meters
     if (value != 0x7F) return;
