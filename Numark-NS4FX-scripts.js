@@ -33,9 +33,13 @@ var ShowFocusedEffectParameters = false;
 //use effect on deck 1+3 and 2+4 or just on active deck?
 var OnlyActiveDeckEffect = false;
 
+//show vu meters for both deck 1+3 and 2+4 or from current deck
+var displayVUFromBothDecks = false;
+
 var NS4FX = {};
 
 NS4FX.init = function(id, debug) {
+    
     NS4FX.id = id;
     NS4FX.debug = debug;
     //deck switching sends the command 2 times, from current and next
@@ -135,8 +139,10 @@ NS4FX.init = function(id, debug) {
     }
 
     // zero vu meters
-    midi.sendShortMsg(0xBF, 0x44, 0);
-    midi.sendShortMsg(0xBF, 0x45, 0);
+    midi.sendShortMsg(0xB0, 0x1F, 0);
+    midi.sendShortMsg(0xB1, 0x1F, 0);
+    midi.sendShortMsg(0xB2, 0x1F, 0);
+    midi.sendShortMsg(0xB3, 0x1F, 0);
 
     // setup elapsed/remaining tracking
     engine.makeConnection("[Controls]", "ShowDurationRemaining", NS4FX.timeElapsedCallback);
@@ -282,7 +288,7 @@ NS4FX.EffectUnit = function() {
             var group = '[EffectRack1_EffectUnit' + effect.unit + '_Effect' + 
                         (self.effects.filter(e => e.unit === effect.unit).indexOf(effect) + 1) + ']';
             var isEnabled = engine.getValue(group, 'enabled');
-            self.effectButtons[effect.name].output(isEnabled ? 0x7F : 0x01);
+            self.effectButtons[effect.name].output(isEnabled ? 0x7F : 0x00);
         });
     };
 
@@ -539,44 +545,11 @@ NS4FX.Deck = function(number, midi_chan) {
         this.hotcue_buttons[i] = new components.HotcueButton({
             midi: [0x94 + midi_chan, 0x18 + i - 1],
             number: i,
-            input: function(channel, control, value, status, group) {
-                var isShifted = (control == (0x18 + this.number -1 + 8));
-                
-                if (value === 0x7F) { // Hotcue gedrückt
-                    var hotcueExists = engine.getValue(group, "hotcue_" + this.number + "_enabled");
-                    if (isShifted && hotcueExists){
-                        engine.setValue(group, "hotcue_" + this.number + "_clear", 1);
-                    }
-                    else if (hotcueExists) {
-                        // Wenn Hotcue existiert, gehe zu dieser Position
-                        this.oldPosition = engine.getValue(group, "playposition");
-                        this.wasPlaying = engine.getValue(group, "play");
-                        hotcuePressed = true;
-                        playPressedDuringHotcue = false;
-                        
-                        engine.setValue(group, "hotcue_" + this.number + "_goto", 1);
-                        
-                        if (!this.wasPlaying) {
-                            engine.setValue(group, "play", 1);
-                        }
-                    } else {
-                        // Wenn kein Hotcue existiert, setze einen neuen
-                        engine.setValue(group, "hotcue_" + this.number + "_set", 1);
-                    }
-                } else if (!isShifted){ // Hotcue losgelassen
-                    if (hotcuePressed) {
-                        if (!this.wasPlaying && !playPressedDuringHotcue) {
-                            engine.setValue(group, "play", 0);
-                            engine.setValue(group, "hotcue_" + this.number + "_goto", 1);
-                        }
-                        hotcuePressed = false;
-                    }
-                }
-            },
+           
             output: function(value) {
                 var brightness = value ? 0x7F : 0x01;
-                midi.sendShortMsg(this.midi[0], this.midi[1], brightness); // Zweites Byte
-            },      
+                midi.sendShortMsg(this.midi[0], this.midi[1], brightness); // Zweites Byte  
+}     
         });
 
         //cue buttons 5 - 8
@@ -703,6 +676,13 @@ NS4FX.Deck = function(number, midi_chan) {
                     engine.setValue(this.group, "loop_double", 1);
                     print("Loop doubled");
                     this.output(1);
+                    for (var status = 0xB0; status <= 0xBF; status++) { // MIDI-Kanäle 1-16
+                        for (var control = 0x00; control <= 0x7F; control++) { // Steueradressen 0-127
+                            if (status == 0xBF && control == 0x75) continue;
+                            if (status == 0xBA && control == 0x75) continue;
+                            midi.sendShortMsg(status, control, 0); // Maximaler Wert (VU-Meter voll setzen)
+                        }
+                    }
                 } else if (value === 0x00) { // Button released
                     this.output(0);
                 }
@@ -1320,58 +1300,61 @@ NS4FX.deckSwitch = function (channel, control, value, status, group) {
     }
     NS4FX.effectUnit.updateEffectOnDeckSwitch(left_side);
 
-    // also zero vu meters
-    if (value != 0x7F) return;
-    midi.sendShortMsg(0xBF, 0x44, 0);
-    midi.sendShortMsg(0xBF, 0x45, 0);
+    // also zero vu meters if vu displays individual decks
+    if (value == 0x7F && !displayVUFromBothDecks){
+    midi.sendShortMsg(0xB0, 0x1F, 0);
+    midi.sendShortMsg(0xB1, 0x1F, 0);
+    midi.sendShortMsg(0xB2, 0x1F, 0);
+    midi.sendShortMsg(0xB3, 0x1F, 0);
+    }
 };
 
 // zero vu meters when toggling pfl
 NS4FX.pflToggle = function(value, group, control) {
-    midi.sendShortMsg(0xBF, 0x44, 0);
-    midi.sendShortMsg(0xBF, 0x45, 0);
+    midi.sendShortMsg(0xB0, 0x1F, 0);
+    midi.sendShortMsg(0xB1, 0x1F, 0);
+    midi.sendShortMsg(0xB2, 0x1F, 0);
+    midi.sendShortMsg(0xB3, 0x1F, 0);
 };
 
 NS4FX.vuCallback = function(value, group, control) {
     // the top LED lights up at 81
-    var level = value * 80;
-
-    // if any channel pfl is active, show channel levels
-    if (engine.getValue('[Channel1]', 'pfl')
-        || engine.getValue('[Channel2]', 'pfl')
-        || engine.getValue('[Channel3]', 'pfl')
-        || engine.getValue('[Channel4]', 'pfl'))
-    {
-        if (engine.getValue(group, "peak_indicator")) {
-            level = 81;
+    var level =value * 81;
+    if (engine.getValue(group, "peak_indicator")) {
+        level = 81;
+    }
+    if (displayVUFromBothDecks){
+        if (group == '[Main]' && control == 'vu_meter_left') {
+            if (engine.getValue(group, "peak_indicator_left")) {
+                level = 81;
+            }
+            midi.sendShortMsg(0xB0, 0x1F, level);
+            midi.sendShortMsg(0xB2, 0x1F, level);
+           }
+           else if (group == '[Main]' && control == 'vu_meter_right') {
+               if (engine.getValue(group, "peak_indicator_right")) {
+                   level = 81;
+                   midi.sendShortMsg(0xB1, 0x1F, level);
+                   midi.sendShortMsg(0xB3, 0x1F, level);
+               }
+            
         }
-
+    }else{
         if (group == '[Channel1]' && NS4FX.decks[1].active) {
-            midi.sendShortMsg(0xBF, 0x44, level);
+            midi.sendShortMsg(0xB0, 0x1F, level);
         }
         else if (group == '[Channel3]' && NS4FX.decks[3].active) {
-            midi.sendShortMsg(0xBF, 0x44, level);
+            midi.sendShortMsg(0xB2, 0x1F, level);
         }
         else if (group == '[Channel2]' && NS4FX.decks[2].active) {
-            midi.sendShortMsg(0xBF, 0x45, level);
+            midi.sendShortMsg(0xB1, 0x1F, level);
         }
         else if (group == '[Channel4]' && NS4FX.decks[4].active) {
-            midi.sendShortMsg(0xBF, 0x45, level);
+            midi.sendShortMsg(0xB3, 0x1F, level);
         }
     }
-    else if (group == '[Master]' && control == 'VuMeterL') {
-        if (engine.getValue(group, "peak_indicator_left")) {
-            level = 81;
-        }
-        midi.sendShortMsg(0xBF, 0x44, level);
-    }
-    else if (group == '[Master]' && control == 'VuMeterR') {
-        if (engine.getValue(group, "peak_indicator_right")) {
-            level = 81;
-        }
-        midi.sendShortMsg(0xBF, 0x45, level);
-    }
-};
+
+ };
 
 // track the state of the shift key
 NS4FX.shift = false;
