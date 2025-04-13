@@ -15,15 +15,6 @@
 // should wheel be enabled on startup?
 var EnableWheel = true;
 
-// should we use the manual loop buttons as hotcue buttons 5-8?
-var UseManualLoopAsCue = false;
-
-// should we use the auto loop buttons as hotcue buttons 5-8?
-var UseAutoLoopAsCue = false;
-
-// should we use the hotcue buttons for samplers 5-8?
-var UseCueAsSampler = false;
-
 // should shift+load eject or load and play?
 var ShiftLoadEjects = true;
 
@@ -44,7 +35,6 @@ NS4FX.init = function(id, debug) {
     NS4FX.debug = debug;
     //deck switching sends the command 2 times, from current and next
     NS4FX.ignore_deck_switch = true;
-
     //effects
     NS4FX.effectUnit = new NS4FX.EffectUnit();
     var effects = [
@@ -384,8 +374,8 @@ NS4FX.EffectUnit.prototype = new components.ComponentContainer();
 
 NS4FX.Deck = function(number, midi_chan) {
     var deck = this;
+    this.number = number;
     this.active = (number == 1 || number == 2);
-    
 
     hotcuePressed = false;
     playPressedDuringHotcue = false;
@@ -455,7 +445,6 @@ NS4FX.Deck = function(number, midi_chan) {
             engine.setValue(this.group, "orientation", desiredOrientation);
         },
     });
-    
 
     this.play_button = new components.PlayButton({
         midi: [0x90 + midi_chan, 0x00],
@@ -482,12 +471,9 @@ NS4FX.Deck = function(number, midi_chan) {
             } else {
                 // Normaler Modus Logik
                 if (value === 0x7F) {
-                    print(hotcuePressed)
                     if (hotcuePressed) {
-                        print("pressed during hotcue")
                         playPressedDuringHotcue = true;
                     } else {
-                        print("normal")
                         var currentPlayState = engine.getValue(group, "play");
                         engine.setValue(group, "play", !currentPlayState);
                     }
@@ -496,7 +482,6 @@ NS4FX.Deck = function(number, midi_chan) {
         }
     });
 
-    //HIER
     this.load = new components.Button({
         inKey: 'LoadSelectedTrack',
         shift: function() {
@@ -539,65 +524,192 @@ NS4FX.Deck = function(number, midi_chan) {
         },
     });
 
+    //HOTCUES
     this.hotcue_buttons = new components.ComponentContainer();
-    this.sampler_buttons = new components.ComponentContainer();
+    this.hotcue_buttons_secondary = new components.ComponentContainer();
+    this.sampler_buttons = new components.ComponentContainer({
+        updateLEDs : function() {
+            for (let button in deck.sampler_buttons) {
+                if (this[button] instanceof components.SamplerButton) {
+                    const samplerGroup = `[Sampler${this[button].number}]`; // Gruppe des entsprechenden Samplers
+                    const isTrackLoaded = engine.getValue(samplerGroup, 'track_loaded'); // Prüfe, ob ein Track geladen ist
+                    // LED leuchtet, wenn ein Track geladen ist
+                    deck.sampler_buttons[button].output(isTrackLoaded ? 1 : 0);
+                }
+            }
+        }
+    });
+    this.fadercuts_buttons = new components.ComponentContainer({
+        updateLEDs: function(deckGroup){
+            for (let button in deck.fadercuts_buttons) {
+                if (deck.fadercuts_buttons[button] instanceof components.Button) {
+                    deck.fadercuts_buttons[button].output(0);
+                }
+            }
+        }
+    });
+    this.update_fadercuts_LEDs = 
+    this.autoloop_buttons = new components.ComponentContainer({
+        updateLEDs: function(deckGroup) {
+            for (let button in deck.autoloop_buttons) { // Iteriere direkt über autoloop_buttons
+                if (deck.autoloop_buttons[button] instanceof components.Button) {
+                    const loopLength = Math.pow(2, 4 - deck.autoloop_buttons[button].number); // Berechne Loop-Länge für den Button
+                    const currentLoopLength = engine.getValue(deckGroup, 'beatloop_size');
+                    const isActive = engine.getValue(deckGroup, 'loop_enabled') && currentLoopLength === loopLength; // Prüfe ob der Loop aktiv ist und die Länge übereinstimmt
+                    
+                    deck.autoloop_buttons[button].output(isActive ? 1 : 0); // LED an/aus basierend auf Zustand
+                }
+            }
+        }
+    });
+
     for (var i = 1; i <= 4; ++i) {
+        
         this.hotcue_buttons[i] = new components.HotcueButton({
-            midi: [0x94 + midi_chan, 0x18 + i - 1],
+            midi: [0x94 + midi_chan, 0x17 + i],
             number: i,
-           
             output: function(value) {
-                var brightness = value ? 0x7F : 0x01;
-                midi.sendShortMsg(this.midi[0], this.midi[1], brightness); // Zweites Byte  
-}     
+                midi.sendShortMsg(this.midi[0], this.midi[1], value ? 0x7F : 0x01); // Zweites Byte  
+            }     
         });
 
         //cue buttons 5 - 8
-        this.hotcue_buttons[9-i] = new components.HotcueButton({
+        this.hotcue_buttons_secondary[5-i] = new components.HotcueButton({
             midi: [0x94 + midi_chan, 0x18 - i],
             number: 9-i,
-            input: function(channel, control, value, status, group) {
-                var isShifted = (control == (0x18 + this.number - 1));
-                if (value === 0x7F) { // Hotcue gedrückt
-                    var hotcueExists = engine.getValue(group, "hotcue_" + this.number + "_enabled");
-                    if (isShifted && hotcueExists){
-                        engine.setValue(group, "hotcue_" + this.number + "_clear", 1);
-                    }
-                    else if (hotcueExists) {
-                        // Wenn Hotcue existiert, gehe zu dieser Position
-                        this.oldPosition = engine.getValue(group, "playposition");
-                        this.wasPlaying = engine.getValue(group, "play");
-                        hotcuePressed = true;
-                        playPressedDuringHotcue = false;
-                        
-                        engine.setValue(group, "hotcue_" + this.number + "_goto", 1);
-                        
-                        if (!this.wasPlaying) {
-                            engine.setValue(group, "play", 1);
-                        }
-                    } else {
-                        // Wenn kein Hotcue existiert, setze einen neuen
-                        engine.setValue(group, "hotcue_" + this.number + "_set", 1);
-                        print("Hotcue " + this.number + " set");
-                    }
-                } else if (!isShifted){ // Hotcue losgelassen
-                    if (hotcuePressed) {
-                        if (!this.wasPlaying && !playPressedDuringHotcue) {
-                            engine.setValue(group, "play", 0);
-                            engine.setValue(group, "hotcue_" + this.number + "_goto", 1);
-                        }
-                        hotcuePressed = false;
-                    }
-                }
-            },
             output: function(value) {
                 midi.sendShortMsg(this.midi[0], this.midi[1], value ? 0x7F : 0x01);
             },
-        
         });
-    }
-    this.hotcues = this.hotcue_buttons;
 
+        //sampler buttons
+        if (deck.number % 2 == 0){
+            sampler_offset = 4;
+        } else {
+            sampler_offset = 0;
+        }
+        this.sampler_buttons[5-i] = new components.SamplerButton({
+            midi: [0x94 + midi_chan, 0x18- i],
+            number: 5-i+sampler_offset,
+            loaded: 0x5,
+            playing: 0x7F
+        });
+
+        this.fadercuts_buttons[5 - i] = new components.Button({
+            midi: [0x94 + midi_chan, 0x18 - i], // Beispiel-MIDI-Adressen
+            input: function(channel, control, value, status) {
+                const deckGroup = `[Channel${deck.number}]`; // Deck-Gruppe basierend auf Deck-Nummer
+    
+                if (value === 0x7F) { // Button gedrückt
+                    const bpm = engine.getValue(deckGroup, 'bpm'); // Hole die BPM des Tracks
+                    const baseInterval = (60 / bpm) * 1000; // Berechne die Dauer eines Beats in Millisekunden
+                    
+                    // Geschwindigkeit basierend auf Button-Nummer (z.B. schneller bei höheren Nummern)
+                    const speedMultiplier = this.number; // Button 1 = langsam, Button 4 = schnell
+                    const interval = baseInterval / speedMultiplier; // Geschwindigkeit anpassen
+                    
+                    print(`BPM=${bpm}, Base Interval=${baseInterval}ms, Speed Multiplier=${speedMultiplier}, Final Interval=${interval}ms`);
+    
+                    this.startFaderCuts(deckGroup, interval); // Cuts mit berechneter Geschwindigkeit starten
+    
+                    this.output(1); // LED aktivieren
+                } else {
+                    this.stopFaderCuts(deckGroup); // Stoppe Fadercuts
+    
+                    this.output(0); // LED deaktivieren
+                }
+            },
+            output: function(value) {
+                midi.sendShortMsg(this.midi[0], this.midi[1], value ? 0x7F : 0x01); // LED an/aus
+            },
+            startFaderCuts: function(deckGroup, interval) {
+                let toggle = false;
+    
+                this.faderCutInterval = engine.beginTimer(interval, () => {
+                    toggle = !toggle; 
+                    
+                    const newVolume = toggle ? 1 : 0; // Wechsel zwischen voller Lautstärke und Stille
+                    
+                    print(`Toggle=${toggle}, New Volume=${newVolume}`);
+                    
+                    engine.setValue(deckGroup, 'volume', newVolume);
+                });
+    
+                print(`Timer started with interval ${interval}ms`);
+            },
+            stopFaderCuts: function(deckGroup) {
+                if (this.faderCutInterval) {
+                    engine.stopTimer(this.faderCutInterval);
+                    this.faderCutInterval = null;
+                }
+    
+                engine.setValue(deckGroup, 'volume', 1); 
+                print(`Resetting volume for ${deckGroup} to 1`);
+            },
+            number: i 
+        });
+
+        this.autoloop_buttons[5 - i] = new components.Button({
+            midi: [0x94 + midi_chan, 0x18 - i], // Beispiel-MIDI-Adressen
+            input: function(channel, control, value, status) {
+                var deckGroup = `[Channel${deck.number}]`; // Deck-Gruppe basierend auf Deck-Nummer
+                
+                if (value === 0x7F) { // Button gedrückt
+                    // Länge des Loops basierend auf Button-Nummer steuern
+                    var loopLength = Math.pow(2, 4 - this.number); // Button 1 = 1 Beat, Button 2 = 2 Beats usw.
+                    
+                    // Prüfe den aktuellen Zustand des Loops
+                    var currentLoopLength = engine.getValue(deckGroup, 'beatloop_size');
+                    var isLoopActive = engine.getValue(this.group, "loop_enabled");// Prüfe ob ein Loop aktiv ist
+                    
+                    if (!isLoopActive || currentLoopLength !== loopLength) {
+                        // Wenn kein Loop aktiv ist oder die Länge sich ändert, setze die neue Länge und aktiviere den Loop
+                        engine.setValue(deckGroup, 'beatloop_size', loopLength);
+                        if (!isLoopActive){
+                            print("nicht aktiv");
+                            deck.loopControls.loop_toggle.input(0,0,0x7F,0);
+                        }else{
+                            engine.setValue(deckGroup, 'loop_enabled', 1); // Aktiviere den Loop
+                            }
+                    }else{
+                        engine.setValue(deckGroup, 'loop_enabled', 0);
+                    }
+
+                    // LEDs aktualisieren
+                    deck.autoloop_buttons.updateLEDs(deckGroup);
+                }
+            },
+            output: function(value) {
+                midi.sendShortMsg(this.midi[0], this.midi[1], value ? 0x7F : 0x01); // LED an/aus
+            },
+            number: i // Speichert die Nummer des Buttons (1–4)
+        });
+    
+    }
+
+    this.change_padmode = function(padmode){
+        this.padmode_str = padmode;
+        if (padmode == "hotcue"){
+            buttons = this.hotcue_buttons_secondary;
+        } else if (padmode == "sampler"){
+            deck.sampler_buttons.updateLEDs(`[Channel${this.number}]`);
+            buttons = this.sampler_buttons;
+        } else if (padmode == "autoloop"){
+            deck.autoloop_buttons.updateLEDs(`[Channel${this.number}]`);
+            buttons = this.autoloop_buttons;
+        } else if (padmode == "fadercuts"){
+            deck.fadercuts_buttons.updateLEDs(`[Channel${this.number}]`);
+            buttons = this.fadercuts_buttons;
+        }
+        this.hotcues.forEachComponent(function(component) {
+            component.disconnect();
+        })
+        this.hotcues = buttons;
+        this.hotcues.reconnectComponents();
+    }
+    this.hotcues = this.hotcue_buttons_secondary;
+    this.padmode_str = "hotcue";
+    this.change_padmode("hotcue");
     this.pitch = new components.Pot({
         inKey: 'rate',
         invert: true,
@@ -607,22 +719,31 @@ NS4FX.Deck = function(number, midi_chan) {
     }
 
     var pitch_or_keylock = function (channel, control, value, status, group) {
-        if (this.other.inGetValue() > 0.0 && this.isPress(channel, control, value, status)) {
-            // toggle keylock, both keys pressed
-            script.toggleControl(this.group, "keylock");
+        if (value === 0) { 
+            // Taste losgelassen → Vererbung an Standard-Button
+            components.Button.prototype.input.call(this, channel, control, value, status, group);
+            return;
         }
-        else {
+    
+        if (this.other.inGetValue() > 0.0 && this.isPress(channel, control, value, status)) {
+            // Beide Pitch-Tasten gedrückt → Keylock umschalten
+            script.toggleControl(this.group, "keylock");
+        } else {
+            // Normales Pitch-Bending
             components.Button.prototype.input.call(this, channel, control, value, status, group);
         }
     };
+    
     this.pitch_bend_up = new components.Button({
         inKey: 'rate_temp_up',
         input: pitch_or_keylock,
     });
+
     this.pitch_bend_down = new components.Button({
         inKey: 'rate_temp_down',
         input: pitch_or_keylock,
     });
+
     this.pitch_bend_up.other = this.pitch_bend_down;
     this.pitch_bend_down.other = this.pitch_bend_up;
 
@@ -651,6 +772,79 @@ NS4FX.Deck = function(number, midi_chan) {
     this.key_up.other = this.key_down;
     this.key_down.other = this.key_up;
 
+    //PAD MODE
+    this.padMode = new components.ComponentContainer({
+        pad_hotcue: new components.Button({
+            midi: [0x94 + midi_chan, 0x00], // MIDI-Adresse für Hotcue-Modus
+            input: function(channel, control, value, status) {
+                if (value === 0x7F) { // Button gedrückt
+                    this.groupContainer.turnOffOtherButtons(this); // Deaktiviert andere LEDs
+                    this.output(1); // Aktiviert LED für diesen Modus
+                    // Logik für Hotcue-Modus aktivieren
+                    deck.change_padmode("hotcue");
+                }
+            },
+            output: function(value) {
+                this.send(value ? 0x7F : 0x01); // LED an/aus
+            }
+        }),
+        pad_autoloop: new components.Button({
+            midi: [0x94 + midi_chan, 0x0D], // MIDI-Adresse für Autoloop-Modus
+            input: function(channel, control, value, status) {
+                if (value === 0x7F) { // Button gedrückt
+                    this.groupContainer.turnOffOtherButtons(this);
+                    this.output(1); 
+                    deck.change_padmode("autoloop");
+                }
+            },
+            output: function(value) {
+                this.send(value ? 0x7F : 0x01);
+            }
+        }),
+        pad_fadercuts: new components.Button({
+            midi: [0x94 + midi_chan, 0x07], // MIDI-Adresse für Fadercuts-Modus
+            input: function(channel, control, value, status) {
+                if (value === 0x7F) {
+                    this.groupContainer.turnOffOtherButtons(this);
+                    this.output(1);
+                    deck.change_padmode("fadercuts");
+                }
+            },
+            output: function(value) {
+                this.send(value ? 0x7F : 0x01);
+            }
+        }),
+        pad_sample: new components.Button({
+            midi: [0x94 + midi_chan, 0x0B], // MIDI-Adresse für Sample-Modus
+            input: function(channel, control, value, status) {
+                if (value === 0x7F) {
+                    this.groupContainer.turnOffOtherButtons(this);
+                    this.output(1);
+                    deck.change_padmode("sampler");
+                }
+            },
+            output: function(value) {
+                this.send(value ? 0x7F : 0x01);
+            }
+        }),
+    
+        turnOffOtherButtons: function(activeButton) {
+            for (var button in this) {
+                if (this[button] instanceof components.Button && this[button] !== activeButton) {
+                    this[button].output(0); // Schaltet LEDs anderer Buttons aus
+                }
+            }
+        }
+    });
+    
+    // Sicherstellen, dass die Buttons Zugriff auf den Container haben
+    for (var button in this.padMode) {
+        if (this.padMode[button] instanceof components.Button) {
+            this.padMode[button].groupContainer = this.padMode; // Container-Referenz setzen
+
+    }
+    this.padMode.pad_hotcue.output(1);
+
     //LOOP
     this.loopControls = new components.ComponentContainer({
         loop_halve: new components.Button({
@@ -658,7 +852,6 @@ NS4FX.Deck = function(number, midi_chan) {
             input: function(channel, control, value, status) {
                 if (value === 0x7F) { // Button pressed
                     engine.setValue(this.group, "loop_halve", 1);
-                    print("Loop halved");
                     this.output(1);
                 } else if (value === 0x00) { // Button released
                     this.output(0);
@@ -674,15 +867,7 @@ NS4FX.Deck = function(number, midi_chan) {
             input: function(channel, control, value, status) {
                 if (value === 0x7F) { // Button pressed
                     engine.setValue(this.group, "loop_double", 1);
-                    print("Loop doubled");
                     this.output(1);
-                    for (var status = 0xB0; status <= 0xBF; status++) { // MIDI-Kanäle 1-16
-                        for (var control = 0x00; control <= 0x7F; control++) { // Steueradressen 0-127
-                            if (status == 0xBF && control == 0x75) continue;
-                            if (status == 0xBA && control == 0x75) continue;
-                            midi.sendShortMsg(status, control, 0); // Maximaler Wert (VU-Meter voll setzen)
-                        }
-                    }
                 } else if (value === 0x00) { // Button released
                     this.output(0);
                 }
@@ -697,7 +882,6 @@ NS4FX.Deck = function(number, midi_chan) {
             input: function(channel, control, value, status) {
                 if (value === 0x7F) { // Button pressed
                     engine.setValue(this.group, "loop_in", 1);
-                    print("Loop in point set");
                     this.output(1);
                 } else if (value === 0x00) { // Button released
                     engine.setValue(this.group, "loop_in", 0);
@@ -714,7 +898,6 @@ NS4FX.Deck = function(number, midi_chan) {
             input: function(channel, control, value, status) {
                 if (value === 0x7F) { // Button pressed
                     engine.setValue(this.group, "loop_out", 1);
-                    print("Loop out point set");
                     this.output(1);
                 } else if (value === 0x00) { // Button released
                     engine.setValue(this.group, "loop_out", 0);
@@ -733,11 +916,9 @@ NS4FX.Deck = function(number, midi_chan) {
                     if (loopEnabled) {
                         // Wenn der Loop aktiv ist, deaktivieren wir ihn
                         engine.setValue(this.group, "loop_enabled", 0);
-                        print("Loop deactivated");
                     } else {
                         // Wenn kein Loop aktiv ist, aktivieren wir den letzten Loop
                         engine.setValue(this.group, "reloop_toggle", 1);
-                        print("Reloop activated");
                     }
                     this.output(1);
                 } else if (value === 0x00) { // Button released
@@ -780,6 +961,10 @@ NS4FX.Deck = function(number, midi_chan) {
                         // Ansonsten setzen wir einen neuen Loop
                         engine.setValue(this.group, "beatloop_activate", 1);
                     }
+                    if (deck.padmode_str == "autoloop"){
+                        var deckGroup = `[Channel${deck.number}]`; // Deck-Gruppe basierend auf Deck-Nummer
+                        deck.autoloop_buttons.updateLEDs(deckGroup);
+                    }
                 }
             },
             output: function(value) {
@@ -796,11 +981,8 @@ NS4FX.Deck = function(number, midi_chan) {
                     }.bind(this))
                 );
             }
-        })
-        
-          
+        }) 
     });
-
 
     this.EqEffectKnob = function (group, in_key, fx_key, filter_knob) {
         this.unshift_group = group;
@@ -892,11 +1074,6 @@ NS4FX.Deck = function(number, midi_chan) {
         }
     });
 
-    // don't light up sampler buttons in hotcue mode
-    this.sampler_buttons.forEachComponent(function(component) {
-        component.disconnect();
-    });
-
     this.setActive = function(active) {
         this.active = active;
 
@@ -906,6 +1083,7 @@ NS4FX.Deck = function(number, midi_chan) {
         }
     };
 };
+}
 
 NS4FX.Deck.prototype = new components.Deck();
 
@@ -993,11 +1171,16 @@ NS4FX.BrowseKnob = function() {
     this.button = new components.Button({
         group: '[Library]',
         inKey: 'GoToItem',
+        input: function (channel, control, value, status, group) {
+            if (value > 0) { // Button gedrückt
+                engine.setParameter(this.group, this.inKey, 1);
+            }
+        },
         unshift: function() {
             this.inKey = 'GoToItem';
         },
         shift: function() {
-            this.inKey = 'MoveFocusForward';
+            this.inKey = 'MoveFocusBackward';
         },
     });
 };
@@ -1054,8 +1237,7 @@ NS4FX.sendScreenBpmMidi = function(deck, bpm) {
     midi.sendSysexMsg(byteArray, byteArray.length);
 };
 
-NS4FX.elapsedToggle = function (channel, control, value, status, group) {
-    if (value != 0x7F) return;
+NS4FX.elapsedToggle = function () {
 
     var current_setting = engine.getValue('[Controls]', 'ShowDurationRemaining');
     if (current_setting === 0) {
@@ -1273,10 +1455,14 @@ NS4FX.wheelTurn = function (channel, control, value, status, group) {
 NS4FX.wheel = []; // initialized in the NS4FX.init() function
 NS4FX.wheelToggle = function (channel, control, value, status, group) {
     if (value != 0x7F) return;
-    NS4FX.wheel[channel] = !NS4FX.wheel[channel];
-    var on_off = 0x01;
-    if (NS4FX.wheel[channel]) on_off = 0x7F;
-    midi.sendShortMsg(0x90 | channel, 0x07, on_off);
+    if (this.shift){
+        NS4FX.elapsedToggle();
+    }else{
+        NS4FX.wheel[channel] = !NS4FX.wheel[channel];
+        var on_off = 0x01;
+        if (NS4FX.wheel[channel]) on_off = 0x7F;
+        midi.sendShortMsg(0x90 | channel, 0x07, on_off);
+    }
 };
 
 NS4FX.deckSwitch = function (channel, control, value, status, group) {
