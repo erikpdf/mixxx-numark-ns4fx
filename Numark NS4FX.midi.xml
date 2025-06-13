@@ -2050,9 +2050,54 @@
             </control>
             <control>
                 <group>[Channel1]</group>
+                <key>NS4FX.decks[1].padMode.pad_pitchplay.input</key>
+                <status>0x94</status>
+                <midino>0x02</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>NS4FX.decks[1].padMode.pad_roll.input</key>
+                <status>0x94</status>
+                <midino>0x06</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>NS4FX.decks[1].padMode.pad_slicer.input</key>
+                <status>0x94</status>
+                <midino>0x0E</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>NS4FX.decks[1].padMode.pad_scratchbanks.input</key>
+                <status>0x94</status>
+                <midino>0x0F</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
                 <key>NS4FX.decks[1].padMode.pad_hotcue.input</key>
                 <status>0x94</status>
                 <midino>0x00</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>NS4FX.decks[1].padMode.pad_autoloop.input</key>
+                <status>0x94</status>
+                <midino>0x0D</midino>
                 <options>
                     <script-binding/>
                 </options>
